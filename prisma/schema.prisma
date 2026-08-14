@@ -1,0 +1,416 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+///////////////////////
+// ENUMS
+///////////////////////
+
+enum Role {
+  USER
+  PARTNER
+  ADMIN
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  DISCONNECTED
+}
+
+enum NotificationType {
+  PERIOD_REMINDER
+  HEALTH_TIP
+  PARTNER_INVITE
+  SYSTEM
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  READ
+}
+
+enum SymptomSeverity {
+  LOW
+  MODERATE
+  HIGH
+  CRITICAL
+}
+
+enum RulePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ChatSender {
+  USER
+  AI
+}
+
+enum CyclePhase {
+  MENSTRUAL
+  FOLLICULAR
+  OVULATION
+  LUTEAL
+  UNKNOWN
+}
+
+///////////////////////
+// USER & AUTH
+///////////////////////
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          Role     @default(USER)
+  isActive      Boolean  @default(true)
+  emailVerified Boolean  @default(false)
+  avatarUrl     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Health
+  healthProfile HealthProfile?
+
+  // Cycles
+  cycles         Cycle[]
+  symptomChecks  SymptomCheck[]
+  chatSessions   ChatSession[]
+  notifications  Notification[]
+
+  // Partner relationship
+  sentPartnerInvite     PartnerConnection[] @relation("Inviter")
+  receivedPartnerInvite PartnerConnection[] @relation("Invitee")
+
+  // Content
+  createdArticles Article[] @relation("ArticleAuthor")
+
+  // Audit
+  auditLogs AdminAuditLog[] @relation("AuditActor")
+}
+
+///////////////////////
+// HEALTH PROFILE
+///////////////////////
+
+model HealthProfile {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+
+  dateOfBirth          DateTime
+  heightCm             Int
+  weightKg             Float
+
+  bloodGroup           String?
+  allergies            String?
+  medicalConditions    String?
+  emergencyContactName String?
+  emergencyContactPhone String?
+
+  lastPeriodDate       DateTime?
+  averageCycleLength   Int?      @default(28)
+  averagePeriodLength  Int?      @default(5)
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+///////////////////////
+// PARTNER SYSTEM
+///////////////////////
+
+model PartnerConnection {
+  id             String            @id @default(cuid())
+
+  inviterUserId  String
+  inviteeUserId  String
+
+  inviteToken    String            @unique
+  status         ConnectionStatus  @default(PENDING)
+
+  invitedAt      DateTime          @default(now())
+  acceptedAt     DateTime?
+  disconnectedAt DateTime?
+
+  inviter User @relation("Inviter", fields: [inviterUserId], references: [id], onDelete: Cascade)
+  invitee User @relation("Invitee", fields: [inviteeUserId], references: [id], onDelete: Cascade)
+
+  sharingSetting PartnerSharingSetting?
+
+  @@unique([inviterUserId, inviteeUserId])
+}
+
+model PartnerSharingSetting {
+  id                   String @id @default(cuid())
+  connectionId         String @unique
+
+  shareCyclePhase      Boolean @default(true)
+  shareNextPeriod      Boolean @default(true)
+  shareMood            Boolean @default(true)
+  shareCareSuggestions Boolean @default(true)
+  shareReminders       Boolean @default(true)
+
+  connection PartnerConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+}
+
+///////////////////////
+// PERIOD TRACKER
+///////////////////////
+
+model Cycle {
+  id             String      @id @default(cuid())
+  userId         String
+
+  startDate      DateTime
+  endDate        DateTime?
+  cycleLength    Int?
+  periodLength   Int?
+
+  mood            String?
+  notes           String?
+  isPrivate       Boolean     @default(false)
+
+  predictedNextPeriod DateTime?
+  predictedOvulation DateTime?
+  fertileStart       DateTime?
+  fertileEnd         DateTime?
+  phase               CyclePhase @default(UNKNOWN)
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  symptoms CycleSymptom[]
+
+  @@index([userId, startDate])
+}
+
+model CycleSymptom {
+  id        String   @id @default(cuid())
+  cycleId   String
+  symptomId String
+
+  cycle   Cycle   @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  symptom Symptom @relation(fields: [symptomId], references: [id], onDelete: Restrict)
+
+  @@unique([cycleId, symptomId])
+}
+
+///////////////////////
+// SYMPTOM ENGINE
+///////////////////////
+
+model Symptom {
+  id          String            @id @default(cuid())
+  name        String            @unique
+  description String?
+  severity    SymptomSeverity   @default(LOW)
+  isActive    Boolean           @default(true)
+
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  cycleSymptoms     CycleSymptom[]
+  checkItems        SymptomCheckItem[]
+  ruleConditions    SymptomRuleCondition[]
+}
+
+model SymptomRule {
+  id               String        @id @default(cuid())
+  title            String
+  recommendation   String
+  priority         RulePriority  @default(MEDIUM)
+  isEmergency      Boolean       @default(false)
+  isActive         Boolean       @default(true)
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  conditions       SymptomRuleCondition[]
+}
+
+model SymptomRuleCondition {
+  id         String @id @default(cuid())
+  ruleId     String
+  symptomId  String
+
+  rule    SymptomRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  symptom Symptom     @relation(fields: [symptomId], references: [id], onDelete: Cascade)
+
+  @@unique([ruleId, symptomId])
+}
+
+model SymptomCheck {
+  id              String   @id @default(cuid())
+  userId          String
+
+  notes           String?
+  recommendation  String?
+  urgencyLevel    RulePriority?
+
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  symptoms SymptomCheckItem[]
+
+  @@index([userId, createdAt])
+}
+
+model SymptomCheckItem {
+  id              String   @id @default(cuid())
+  checkId         String
+  symptomId       String
+
+  check   SymptomCheck @relation(fields: [checkId], references: [id], onDelete: Cascade)
+  symptom Symptom      @relation(fields: [symptomId], references: [id], onDelete: Restrict)
+
+  @@unique([checkId, symptomId])
+}
+
+///////////////////////
+// EDUCATIONAL RESOURCES
+///////////////////////
+
+model ArticleCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+
+  createdAt   DateTime @default(now())
+
+  articles    Article[]
+}
+
+model Article {
+  id           String         @id @default(cuid())
+  categoryId   String
+  authorId     String
+
+  title        String
+  slug         String         @unique
+  summary      String?
+  content      String         // minimal readable text stored in DB
+  coverImage   String?
+
+  status       ArticleStatus  @default(DRAFT)
+
+  publishedAt  DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  category ArticleCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  author   User            @relation("ArticleAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([status, publishedAt])
+}
+
+///////////////////////
+// AI CHAT
+///////////////////////
+
+model ChatSession {
+  id         String   @id @default(cuid())
+  userId     String
+  title      String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  messages ChatMessage[]
+
+  @@index([userId, createdAt])
+}
+
+model ChatMessage {
+  id         String     @id @default(cuid())
+  sessionId  String
+  sender     ChatSender
+
+  content    String
+
+  createdAt  DateTime   @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
+
+///////////////////////
+// NOTIFICATIONS
+///////////////////////
+
+model Notification {
+  id          String               @id @default(cuid())
+  userId      String
+
+  title       String
+  message     String
+
+  type        NotificationType
+  channel     NotificationChannel  @default(IN_APP)
+  status      NotificationStatus   @default(PENDING)
+
+  scheduledFor DateTime?
+  sentAt       DateTime?
+  readAt       DateTime?
+
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
+
+///////////////////////
+// ADMIN AUDIT
+///////////////////////
+
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  actorId     String
+
+  action      String
+  targetType  String
+  targetId    String?
+  details     String?
+
+  createdAt   DateTime @default(now())
+
+  actor User @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId, createdAt])
+}
