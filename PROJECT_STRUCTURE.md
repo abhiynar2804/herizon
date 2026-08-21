@@ -1,284 +1,281 @@
-# Project Structure Documentation
+# Project Structure
 
 ## Overview
 
-This is a **Next.js 15+ Full-Stack Application** with **Prisma ORM** as the database layer and **NextAuth.js** for authentication. The project is structured using the Next.js App Router pattern with TypeScript.
+This repository is a full-stack Next.js application for a health, cycle-tracking, and wellness platform. The stack includes:
+
+- Next.js App Router
+- TypeScript
+- Prisma ORM with PostgreSQL
+- NextAuth.js for authentication
+- Zod validation utilities
+- Tailwind CSS via PostCSS
+
+The app is structured around user health management, partner sharing, symptom tracking, educational resources, and admin/audit features.
 
 ---
 
-## Directory Structure
+## Root Structure
 
-```
+```text
 herizone-vone/
-├── public/                          # Static assets served publicly
-├── prisma/                          # Prisma ORM configuration and migrations
-│   ├── schema.prisma               # Database schema definition
-│   ├── migrations/                 # Database migration history
-│   │   ├── migration_lock.toml     # Migration lock file (SQLite)
-│   │   └── 20260814082438_init_herizon/
-│   │       └── migration.sql       # Initial database migration
-│   └── .env.local                  # (Not shown) Database connection URL
-├── src/                            # Source code directory
-│   ├── app/                        # Next.js App Router (Pages & API Routes)
-│   │   ├── globals.css             # Global stylesheet
-│   │   ├── layout.tsx              # Root layout component
-│   │   ├── page.tsx                # Home page component
-│   │   ├── api/                    # API routes (backend endpoints)
-│   │   │   ├── auth/
-│   │   │   │   ├── [...nextauth]/
-│   │   │   │   │   └── route.ts    # NextAuth.js authentication handler
-│   │   │   │   └── signup/
-│   │   │   │       └── route.ts    # User registration endpoint
-│   │   │   ├── cycles/
-│   │   │   │   ├── route.ts        # GET/POST cycles (list & create)
-│   │   │   │   └── [id]/
-│   │   │   │       └── route.ts    # GET/PATCH/DELETE specific cycle
-│   │   │   ├── health-profile/
-│   │   │   │   └── route.ts        # Health profile management endpoint
-│   │   │   └── symptoms/
-│   │   │       └── check/          # Symptoms checking endpoint
-│   │   ├── dashboard/
-│   │   │   └── page.tsx            # Dashboard page
-│   │   ├── login/
-│   │   │   └── page.tsx            # Login page
-│   │   └── onboarding/
-│   │       └── page.tsx            # Onboarding page
-│   ├── generated/                  # Auto-generated code (Prisma Client)
-│   │   └── prisma/
-│   │       ├── client.d.ts         # Prisma Client TypeScript types
-│   │       ├── client.js           # Prisma Client compiled JS
-│   │       ├── default.d.ts        # Default export types
-│   │       ├── default.js          # Default export compiled JS
-│   │       ├── edge.d.ts           # Edge runtime types
-│   │       ├── edge.js             # Edge runtime compiled JS
-│   │       ├── index-browser.js    # Browser compatible version
-│   │       ├── index.d.ts          # Main export types
-│   │       ├── index.js            # Main export compiled JS
-│   │       ├── package.json        # Prisma package metadata
-│   │       ├── query_compiler_*.js # Query compilation files
-│   │       ├── schema.prisma       # Generated schema copy
-│   │       ├── wasm-*.mjs          # WASM binary loaders
-│   │       └── runtime/            # Runtime utilities
-│   │           ├── client.d.ts
-│   │           ├── client.js
-│   │           ├── index-browser.*
-│   │           └── wasm-compiler-edge.js
-│   ├── lib/                        # Shared utility functions & logic
-│   │   ├── auth.ts                 # Authentication utilities
-│   │   ├── password.ts             # Password hashing & validation
-│   │   ├── prisma.ts               # Prisma Client singleton instance
-│   │   ├── period/
-│   │   │   └── calculations.ts     # Menstrual cycle calculations
-│   │   ├── symptoms/               # Symptoms-related utilities
-│   │   └── validations/            # Input validation schemas
-│   │       ├── health-profile.ts   # Health profile validation
-│   │       └── period.ts           # Period/cycle validation
-│   └── types/                      # TypeScript type definitions
-│       └── next-auth.d.ts          # NextAuth.js type augmentation
-├── .env.local                      # (Not shown) Environment variables
-├── .gitignore                      # (Not shown) Git ignore rules
-├── AGENTS.md                       # Modernization agent guidelines
-├── CLAUDE.md                       # Assistant guidelines
-├── PROJECT_STRUCTURE.md            # This file
-├── README.md                       # Project documentation
-├── eslint.config.mjs               # ESLint configuration (ES modules)
-├── next-env.d.ts                   # Next.js auto-generated TypeScript definitions
-├── next.config.ts                  # Next.js configuration
-├── package.json                    # Project dependencies & scripts
-├── postcss.config.mjs              # PostCSS configuration
-├── prisma.config.ts                # Prisma configuration (custom)
-├── skills-lock.json                # Skills/dependencies lock file
-└── tsconfig.json                   # TypeScript configuration
+├── .agents/                       # Local agent metadata or automation files
+├── .claude/                       # Claude-specific project guidance
+├── .env                           # Local environment variables
+├── .git/                          # Git repository metadata
+├── .gitignore                     # Git ignore rules
+├── .next/                         # Next.js build cache/output
+├── .windsurf/                     # Windsurf/editor metadata
+├── AGENTS.md                      # Agent/project instructions
+├── CLAUDE.md                      # Claude-specific instructions
+├── eslint.config.mjs              # ESLint configuration
+├── next-env.d.ts                  # Next.js TypeScript environment declarations
+├── next.config.ts                 # Next.js configuration
+├── node_modules/                  # Installed project dependencies
+├── package-lock.json              # NPM lock file
+├── package.json                   # App scripts and dependencies
+├── postcss.config.mjs             # PostCSS configuration
+├── prisma/                        # Prisma schema and migrations
+│   ├── migrations/                # Database migrations
+│   │   └── migration_lock.toml    # Prisma migration lock file
+│   └── schema.prisma              # Core database schema
+├── prisma.config.ts               # Prisma project configuration
+├── PROJECT_STRUCTURE.md           # Project structure overview
+├── public/                        # Public static files
+│   └── favicon.ico                # Site favicon
+├── README.md                      # Default project docs
+├── skills-lock.json               # Tool/skills lock file
+├── src/                           # Application source code
+├── tsconfig.json                  # TypeScript settings
+└── .vscode/                       # VS Code workspace files (if generated locally)
 ```
 
 ---
 
-## Key Directories Explained
+## Source Structure
 
-### `/src/app` - Next.js App Router
-
-The main application structure using Next.js 13+ App Router:
-
-- **Page routes**: Nested folders become URL routes
-- **API routes**: `api/` folder contains backend endpoints
-- **Layouts**: `layout.tsx` provides shared UI and state
-
-### `/src/lib` - Business Logic & Utilities
-
-Shared code for backend operations:
-
-- **auth.ts**: Authentication helper functions
-- **prisma.ts**: Centralized Prisma Client instance (prevents connection pool issues)
-- **period/**: Menstrual cycle-related calculations
-- **validations/**: Input validation logic (likely using Zod or similar)
-
-### `/src/types` - TypeScript Definitions
-
-Custom type definitions for the application:
-
-- **next-auth.d.ts**: Extends NextAuth.js types for custom user properties
-
-### `/prisma` - Database Configuration
-
-- **schema.prisma**: Database models and relationships
-- **migrations/**: Version history of database changes (Git-like versioning)
-
----
-
-## Technology Stack
-
-| Layer               | Technology                     | Purpose                           |
-| ------------------- | ------------------------------ | --------------------------------- |
-| **Frontend**        | Next.js, React, TypeScript     | UI and client-side logic          |
-| **Styling**         | PostCSS, CSS                   | Component styling                 |
-| **Backend**         | Next.js API Routes             | RESTful API endpoints             |
-| **Database**        | Prisma ORM                     | Database abstraction & management |
-| **Authentication**  | NextAuth.js                    | User authentication & sessions    |
-| **Database Engine** | SQLite (default) or PostgreSQL | Data persistence                  |
-| **Language**        | TypeScript                     | Type-safe development             |
-| **Linting**         | ESLint                         | Code quality                      |
-
----
-
-## Core Features (Inferred from Structure)
-
-1. **Authentication System**
-   - User signup and login via `api/auth/`
-   - NextAuth.js session management
-   - Password utilities for hashing
-
-2. **Health Tracking**
-   - Menstrual cycle tracking (`/periods`, `/cycles`)
-   - Health profile management
-   - Symptoms logging and checking
-
-3. **User Dashboard**
-   - Personalized dashboard page
-   - Onboarding flow for new users
-
----
-
-## Environment Configuration
-
-### Configuration Files
-
-- **next.config.ts**: Next.js build and runtime settings
-- **tsconfig.json**: TypeScript compiler options
-- **eslint.config.mjs**: Code linting rules
-- **postcss.config.mjs**: CSS processing pipeline
-- **prisma.config.ts**: Custom Prisma configuration
-
-### Environment Variables (`.env.local`)
-
-Expected variables:
-
-- `DATABASE_URL`: Prisma database connection string
-- `NEXTAUTH_SECRET`: NextAuth.js encryption key
-- `NEXTAUTH_URL`: Application URL for auth callbacks
-- Additional API keys and configuration as needed
+```text
+src/
+├── app/                           # App Router pages and API routes
+│   ├── api/                       # Backend endpoints
+│   │   ├── admin/                 # Admin APIs
+│   │   │   ├── article-categories/
+│   │   │   ├── articles/
+│   │   │   ├── audit-logs/
+│   │   │   ├── dashboard/
+│   │   │   ├── symptom-rules/
+│   │   │   ├── symptoms/
+│   │   │   └── users/
+│   │   ├── auth/                  # Auth endpoints
+│   │   │   ├── signup/
+│   │   │   └── [...nextauth]/
+│   │   │       └── route.ts
+│   │   ├── cycles/                # Cycle tracking APIs
+│   │   │   ├── route.ts
+│   │   │   └── [id]/
+│   │   │       └── route.ts
+│   │   ├── partner/               # Partner-sharing APIs
+│   │   │   ├── connection/
+│   │   │   ├── dashboard/
+│   │   │   ├── invite/
+│   │   │   └── sharing/
+│   │   ├── resources/             # Educational content APIs
+│   │   │   ├── categories/
+│   │   │   ├── route.ts
+│   │   │   └── [slug]/
+│   │   └── symptoms/              # Symptom APIs
+│   │       ├── check/
+│   │       └── history/
+│   ├── dashboard/
+│   │   └── page.tsx               # Dashboard page
+│   ├── favicon.ico                # App icon
+│   ├── globals.css                # Global styling
+│   ├── layout.tsx                 # Root app layout
+│   ├── login/
+│   │   └── page.tsx               # Login page
+│   ├── onboarding/
+│   │   └── page.tsx               # Onboarding page
+│   ├── page.tsx                   # Home page
+│   └── resources/                 # Resource UI section
+├── generated/                     # Generated Prisma client output
+│   └── prisma/                    # Prisma runtime files and types
+├── lib/                           # Shared logic, validation, helpers
+│   ├── auth.ts                    # Auth helpers and config
+│   ├── password.ts                # Password hashing / verification
+│   ├── period/
+│   │   └── calculations.ts        # Period and cycle calculations
+│   ├── prisma.ts                  # Prisma singleton
+│   ├── symptoms/                  # Symptom-related utility modules
+│   └── validations/               # Zod validation schemas
+│       ├── article.ts
+│       ├── health-profile.ts
+│       ├── partner.ts
+│       ├── period.ts
+│       ├── symptom-rule.ts
+│       └── symptom.ts
+├── types/                         # TS declarations
+│   └── next-auth.d.ts             # NextAuth augmentation
+└── ...
+```
 
 ---
 
-## API Endpoints Summary
+## Database Model Overview
 
-| Route                     | Method           | Purpose                   |
-| ------------------------- | ---------------- | ------------------------- |
-| `/api/auth/[...nextauth]` | GET/POST         | Authentication endpoints  |
-| `/api/auth/signup`        | POST             | User registration         |
-| `/api/cycles`             | GET/POST         | List and create cycles    |
-| `/api/cycles/[id]`        | GET/PATCH/DELETE | Manage specific cycle     |
-| `/api/health-profile`     | GET/POST         | Health profile management |
-| `/api/symptoms/check`     | POST             | Check/log symptoms        |
+The Prisma schema defines a health and wellness domain with the following primary models:
+
+### Core user and auth
+
+- `User`
+- `HealthProfile`
+- `PartnerConnection`
+- `PartnerSharingSetting`
+
+### Period and symptom tracking
+
+- `Cycle`
+- `CycleSymptom`
+- `Symptom`
+- `SymptomRule`
+- `SymptomRuleCondition`
+- `SymptomCheck`
+- `SymptomCheckItem`
+
+### Education and content
+
+- `ArticleCategory`
+- `Article`
+
+### AI and communication
+
+- `ChatSession`
+- `ChatMessage`
+- `Notification`
+
+### Admin and audit
+
+- `AdminAuditLog`
+
+### Enums
+
+The schema includes enums such as:
+
+- `Role`
+- `ConnectionStatus`
+- `NotificationType`
+- `NotificationChannel`
+- `NotificationStatus`
+- `SymptomSeverity`
+- `RulePriority`
+- `ArticleStatus`
+- `ChatSender`
+- `CyclePhase`
 
 ---
 
-## Development Notes
+## Main Features by Area
 
-### Database Schema Location
+### 1. Authentication and user account management
 
-- Source: `prisma/schema.prisma`
-- Generated types: `src/generated/prisma/client.d.ts`
+- Sign-up flow under `src/app/api/auth/signup`
+- Auth routes under `src/app/api/auth/[...nextauth]`
+- Shared auth logic in `src/lib/auth.ts`
+- Password handling in `src/lib/password.ts`
 
-### Prisma Client Usage
+### 2. Period and cycle tracking
 
-- Centralized instance: `src/lib/prisma.ts`
-- Import with: `import { prisma } from '@/lib/prisma'`
+- Cycle CRUD endpoints in `src/app/api/cycles`
+- Cycle calculation utilities in `src/lib/period/calculations.ts`
+- Validation helpers in `src/lib/validations/period.ts`
 
-### Authentication Flow
+### 3. Partner and sharing features
 
-- Configured in: `src/lib/auth.ts`
-- Routes handled: `src/app/api/auth/`
-- Protected pages use NextAuth.js session checks
+- Partner invitation, connection, and sharing endpoints in `src/app/api/partner`
+- Matching validation in `src/lib/validations/partner.ts`
 
-### Type Safety
+### 4. Symptom analysis and recommendations
 
-- TypeScript strict mode enabled
-- Prisma generates types automatically
-- Custom types in `src/types/`
+- Symptom check routes in `src/app/api/symptoms`
+- Symptom rule engine in Prisma schema and validation utilities
+- Support for tracked symptoms and emergency recommendation logic
+
+### 5. Educational content resources
+
+- Resource API under `src/app/api/resources`
+- Content categories and article model under `prisma/schema.prisma`
+- Validation in `src/lib/validations/article.ts`
+
+### 6. Admin and audit workflows
+
+- Admin endpoints for users, articles, symptoms, and dashboard metadata
+- Audit logging model for administrative actions
 
 ---
 
-## Build Artifacts
+## Key Configuration Files
 
-### Generated Files (Auto-generated, do not edit)
-
-- `/src/generated/prisma/`: Prisma Client build output
-- `next-env.d.ts`: Next.js environment types
-
-### Lock Files
-
-- `skills-lock.json`: Dependency lock
-- `prisma/migrations/migration_lock.toml`: Migration lock
+- `package.json` — scripts, dependencies, and project metadata
+- `next.config.ts` — Next.js runtime/build configuration
+- `tsconfig.json` — TypeScript compiler configuration
+- `eslint.config.mjs` — linting rules
+- `postcss.config.mjs` — CSS pipeline configuration
+- `prisma.config.ts` — Prisma configuration
+- `.env` — environment variables (database URL, auth keys, etc.)
 
 ---
 
-## Getting Started
+## Environment Expectations
 
-### Install Dependencies
+This project is configured for PostgreSQL, as shown by the Prisma datasource and dependency stack.
+
+Typical environment variables include:
+
+- `DATABASE_URL`
+- `NEXTAUTH_SECRET`
+- `NEXTAUTH_URL`
+- Any app-specific credentials or secrets used by the platform
+
+---
+
+## Standard Development Commands
 
 ```bash
 npm install
+npm run dev
+npm run build
+npm run lint
 ```
 
-### Setup Database
+For Prisma database work:
 
 ```bash
+npx prisma generate
 npx prisma migrate dev
 ```
 
-### Development Server
+---
 
-```bash
-npm run dev
-```
+## Notes
 
-### Build for Production
-
-```bash
-npm run build
-npm start
-```
+- The Prisma client is generated into `src/generated/prisma`.
+- The app uses Next.js App Router rather than the Pages Router.
+- The codebase is more feature-rich than a simple starter app and includes a health-platform domain model.
+- Several folders (for example `src/app/api/admin`, `src/app/api/partner`, `src/app/api/resources`) indicate a more complete product architecture than the default template.
 
 ---
 
-## File Naming Conventions
+## Summary
 
-- **Pages**: `page.tsx`
-- **Layouts**: `layout.tsx`
-- **API Routes**: `route.ts`
-- **Components**: `PascalCase.tsx` (not shown in structure, likely in shared folder)
-- **Utilities**: `camelCase.ts`
-- **Types**: `.d.ts` or types folder
+This project is a multi-feature wellness application with:
 
----
+- user authentication
+- cycle tracking
+- partner sharing
+- symptom management
+- educational content
+- admin operations
+- audit and notification infrastructure
 
-## Security Considerations
+The repository structure reflects a product-ready SaaS-style application rather than a basic scaffold.
 
-1. ✅ Database: Prisma ORM prevents SQL injection
-2. ✅ Authentication: NextAuth.js handles session security
-3. ✅ Password: Custom password utilities for hashing
-4. ✅ Environment: Sensitive data in `.env.local` (not committed)
-
----
-
-**Last Updated**: 2026-08-18
+Last updated: 2026-08-21
