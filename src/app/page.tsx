@@ -1,7 +1,13 @@
-export default function Home() {
-  return (
-    <main className="min-h-screen flex items-center justify-center">
-      <h1 className="text-3xl font-bold">Herizon Setup Successful 🎉</h1>
-    </main>
-  );
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
+import { authOptions } from "@/lib/auth";
+
+export default async function Home() {
+  const session = await getServerSession(authOptions);
+
+  if (session?.user?.id) {
+    redirect("/dashboard");
+  }
+
+  redirect("/login");
 }
