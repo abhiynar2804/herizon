@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 type Cycle = {
   id: string;
@@ -39,7 +41,6 @@ export default function PeriodPage() {
       setError("");
 
       const response = await fetch("/api/cycles");
-
       const data = await response.json();
 
       if (!response.ok) {
@@ -49,9 +50,7 @@ export default function PeriodPage() {
       setCycles(data.cycles ?? []);
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to load cycles."
+        err instanceof Error ? err.message : "Unable to load cycles."
       );
     } finally {
       setLoading(false);
@@ -92,7 +91,6 @@ export default function PeriodPage() {
       }
 
       setSuccess("Period recorded successfully.");
-
       setStartDate("");
       setEndDate("");
       setMood("");
@@ -101,9 +99,7 @@ export default function PeriodPage() {
       await loadCycles();
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to save period."
+        err instanceof Error ? err.message : "Unable to save period."
       );
     } finally {
       setSaving(false);
@@ -111,56 +107,52 @@ export default function PeriodPage() {
   }
 
   function formatDate(date: string | null) {
-    if (!date) {
-      return "Not available";
-    }
-
-    return new Date(date).toLocaleDateString();
+    if (!date) return "Not available";
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-10">
-      <div className="mx-auto max-w-5xl space-y-8">
-        <header>
-          <p className="text-sm font-medium text-pink-600">
-            Herizon
-          </p>
+    <div className="min-h-screen flex flex-col bg-gray-50/70">
+      <Navbar />
 
-          <h1 className="mt-1 text-3xl font-bold text-gray-900">
-            Period Tracker
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <header className="space-y-1">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-100/70 text-pink-700 text-xs font-semibold">
+            🌸 Reproductive Health Tracker
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+            Period &amp; Cycle Intelligence
           </h1>
-
-          <p className="mt-2 text-gray-500">
-            Record your cycle and view calculated predictions.
+          <p className="text-gray-500 text-sm">
+            Record menstruation dates, track symptoms, and view personalized phase predictions.
           </p>
         </header>
 
-        <section className="rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Log Period
+        {/* Log Period Form Card */}
+        <section className="rounded-3xl bg-white p-6 sm:p-8 shadow-xs border border-pink-100/60">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span>✨ Log New Period</span>
           </h2>
 
-          <form
-            onSubmit={handleSubmit}
-            className="mt-5 space-y-4"
-          >
+          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label
                   htmlFor="startDate"
-                  className="mb-1 block text-sm font-medium text-gray-700"
+                  className="mb-1.5 block text-xs font-semibold text-gray-700"
                 >
-                  Start Date
+                  Period Start Date *
                 </label>
-
                 <input
                   id="startDate"
                   type="date"
                   value={startDate}
-                  onChange={(event) =>
-                    setStartDate(event.target.value)
-                  }
-                  className="w-full rounded-lg border px-3 py-2"
+                  onChange={(event) => setStartDate(event.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                   required
                 />
               </div>
@@ -168,19 +160,16 @@ export default function PeriodPage() {
               <div>
                 <label
                   htmlFor="endDate"
-                  className="mb-1 block text-sm font-medium text-gray-700"
+                  className="mb-1.5 block text-xs font-semibold text-gray-700"
                 >
-                  End Date
+                  Period End Date (Optional)
                 </label>
-
                 <input
                   id="endDate"
                   type="date"
                   value={endDate}
-                  onChange={(event) =>
-                    setEndDate(event.target.value)
-                  }
-                  className="w-full rounded-lg border px-3 py-2"
+                  onChange={(event) => setEndDate(event.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                 />
               </div>
             </div>
@@ -188,148 +177,144 @@ export default function PeriodPage() {
             <div>
               <label
                 htmlFor="mood"
-                className="mb-1 block text-sm font-medium text-gray-700"
+                className="mb-1.5 block text-xs font-semibold text-gray-700"
               >
-                Mood
+                Mood &amp; Sensations
               </label>
-
               <input
                 id="mood"
                 type="text"
                 value={mood}
-                onChange={(event) =>
-                  setMood(event.target.value)
-                }
+                onChange={(event) => setMood(event.target.value)}
                 maxLength={100}
-                placeholder="e.g. Calm, tired, energetic"
-                className="w-full rounded-lg border px-3 py-2"
+                placeholder="e.g. Energetic, mild cramps, calm, tender breasts"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
               />
             </div>
 
             <div>
               <label
                 htmlFor="notes"
-                className="mb-1 block text-sm font-medium text-gray-700"
+                className="mb-1.5 block text-xs font-semibold text-gray-700"
               >
-                Notes
+                Personal Notes
               </label>
-
               <textarea
                 id="notes"
                 value={notes}
-                onChange={(event) =>
-                  setNotes(event.target.value)
-                }
+                onChange={(event) => setNotes(event.target.value)}
                 maxLength={2000}
-                rows={4}
-                placeholder="Optional notes..."
-                className="w-full rounded-lg border px-3 py-2"
+                rows={3}
+                placeholder="Any dietary notes, sleep changes, or flow intensity..."
+                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
               />
             </div>
 
             {error && (
-              <p className="text-sm text-red-600">
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
                 {error}
-              </p>
+              </div>
             )}
 
             {success && (
-              <p className="text-sm text-green-600">
-                {success}
-              </p>
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium">
+                ✓ {success}
+              </div>
             )}
 
             <button
               type="submit"
               disabled={saving}
-              className="rounded-lg bg-pink-600 px-5 py-2.5 font-medium text-white disabled:opacity-50"
+              className="rounded-xl bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 px-6 py-2.5 text-sm font-semibold text-white shadow-xs disabled:opacity-50 transition"
             >
               {saving ? "Saving..." : "Save Period"}
             </button>
           </form>
         </section>
 
-        <section>
-          <h2 className="text-xl font-semibold text-gray-900">
-            Cycle History
+        {/* History List */}
+        <section className="space-y-4">
+          <h2 className="text-xl font-bold text-gray-900">
+            Recorded Cycles &amp; Predictions
           </h2>
 
           {loading ? (
-            <p className="mt-4 text-gray-500">
-              Loading cycles...
-            </p>
+            <div className="rounded-3xl bg-white p-8 text-center text-xs text-gray-500">
+              Loading cycle records...
+            </div>
           ) : cycles.length === 0 ? (
-            <div className="mt-4 rounded-2xl bg-white p-6 shadow-sm">
-              <p className="text-gray-500">
-                No cycle records yet.
-              </p>
+            <div className="rounded-3xl bg-white p-8 text-center text-xs text-gray-500">
+              No cycle records found. Add your first record above!
             </div>
           ) : (
-            <div className="mt-4 space-y-4">
+            <div className="space-y-4">
               {cycles.map((cycle) => (
                 <article
                   key={cycle.id}
-                  className="rounded-2xl bg-white p-6 shadow-sm"
+                  className="rounded-3xl bg-white p-6 shadow-xs border border-pink-100/60"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-gray-100">
                     <div>
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-bold text-gray-900 text-base">
                         {formatDate(cycle.startDate)}
                         {" → "}
                         {formatDate(cycle.endDate)}
                       </h3>
-
-                      <p className="mt-1 text-sm text-gray-500">
-                        Phase: {cycle.phase}
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        Phase:{" "}
+                        <span className="font-semibold text-pink-600">
+                          {cycle.phase}
+                        </span>
                       </p>
                     </div>
 
-                    <span className="rounded-full bg-pink-50 px-3 py-1 text-sm text-pink-700">
+                    <span className="rounded-full bg-pink-50 border border-pink-100 px-3 py-1 text-xs font-semibold text-pink-700">
                       {cycle.periodLength
-                        ? `${cycle.periodLength} day period`
-                        : "Period length pending"}
+                        ? `${cycle.periodLength} days period`
+                        : "Ongoing"}
                     </span>
                   </div>
 
-                  <div className="mt-5 grid gap-3 text-sm text-gray-600 sm:grid-cols-2">
-                    <p>
-                      Cycle length:{" "}
-                      {cycle.cycleLength
-                        ? `${cycle.cycleLength} days`
-                        : "Not available"}
-                    </p>
+                  <div className="mt-4 grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="p-3 rounded-2xl bg-gray-50">
+                      <span className="text-gray-400 block text-[11px]">Cycle Length</span>
+                      <span className="font-semibold text-gray-800 mt-0.5 block">
+                        {cycle.cycleLength ? `${cycle.cycleLength} days` : "Calculating..."}
+                      </span>
+                    </div>
 
-                    <p>
-                      Next period:{" "}
-                      {formatDate(cycle.predictedNextPeriod)}
-                    </p>
+                    <div className="p-3 rounded-2xl bg-pink-50/50">
+                      <span className="text-pink-600 block text-[11px]">Next Period</span>
+                      <span className="font-bold text-pink-900 mt-0.5 block">
+                        {formatDate(cycle.predictedNextPeriod)}
+                      </span>
+                    </div>
 
-                    <p>
-                      Ovulation:{" "}
-                      {formatDate(cycle.predictedOvulation)}
-                    </p>
+                    <div className="p-3 rounded-2xl bg-purple-50/50">
+                      <span className="text-purple-600 block text-[11px]">Ovulation</span>
+                      <span className="font-bold text-purple-900 mt-0.5 block">
+                        {formatDate(cycle.predictedOvulation)}
+                      </span>
+                    </div>
 
-                    <p>
-                      Fertile window:{" "}
-                      {cycle.fertileStart &&
-                      cycle.fertileEnd
-                        ? `${formatDate(
-                            cycle.fertileStart
-                          )} – ${formatDate(
-                            cycle.fertileEnd
-                          )}`
-                        : "Not available"}
-                    </p>
+                    <div className="p-3 rounded-2xl bg-gray-50">
+                      <span className="text-gray-400 block text-[11px]">Fertile Window</span>
+                      <span className="font-semibold text-gray-800 mt-0.5 block">
+                        {cycle.fertileStart && cycle.fertileEnd
+                          ? `${formatDate(cycle.fertileStart)} – ${formatDate(cycle.fertileEnd)}`
+                          : "Pending"}
+                      </span>
+                    </div>
                   </div>
 
                   {cycle.mood && (
-                    <p className="mt-4 text-sm text-gray-600">
-                      <strong>Mood:</strong> {cycle.mood}
+                    <p className="mt-3 text-xs text-gray-600">
+                      <strong>Mood / Sensations:</strong> {cycle.mood}
                     </p>
                   )}
 
                   {cycle.notes && (
-                    <p className="mt-2 text-sm text-gray-600">
+                    <p className="mt-1 text-xs text-gray-500">
                       <strong>Notes:</strong> {cycle.notes}
                     </p>
                   )}
@@ -338,7 +323,9 @@ export default function PeriodPage() {
             </div>
           )}
         </section>
-      </div>
-    </main>
+      </main>
+
+      <Footer />
+    </div>
   );
 }

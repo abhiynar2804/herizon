@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 type Resource = {
   id: string;
@@ -16,22 +18,26 @@ type Resource = {
 };
 
 async function getResource(slug: string): Promise<Resource | null> {
-  const response = await fetch(
-    `${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/resources/${slug}`,
-    {
-      cache: "no-store",
-    },
-  );
+  try {
+    const response = await fetch(
+      `${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/resources/${slug}`,
+      {
+        cache: "no-store",
+      },
+    );
 
-  if (response.status === 404) {
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch resource.");
+    }
+
+    return response.json();
+  } catch {
     return null;
   }
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch resource.");
-  }
-
-  return response.json();
 }
 
 export default async function ResourcePage({
@@ -47,35 +53,41 @@ export default async function ResourcePage({
   }
 
   return (
-    <main className="min-h-screen px-6 py-10">
-      <article className="mx-auto max-w-3xl">
-        <Link
-          href="/resources"
-          className="text-sm underline"
-        >
-          ← Back to resources
-        </Link>
+    <div className="min-h-screen flex flex-col bg-gray-50/70">
+      <Navbar />
 
-        <div className="mt-8">
-          <p className="text-sm font-medium">
-            {article.category.name}
-          </p>
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <article className="rounded-3xl bg-white p-6 sm:p-10 shadow-xs border border-pink-100/60">
+          <Link
+            href="/resources"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-pink-600 hover:text-pink-700 hover:underline"
+          >
+            ← Back to All Resources
+          </Link>
 
-          <h1 className="mt-2 text-4xl font-bold">
-            {article.title}
-          </h1>
+          <div className="mt-6">
+            <span className="px-2.5 py-1 rounded-full bg-pink-50 text-pink-700 text-[10px] font-bold uppercase tracking-wider">
+              {article.category.name}
+            </span>
 
-          {article.summary && (
-            <p className="mt-4 text-lg text-gray-600">
-              {article.summary}
-            </p>
-          )}
+            <h1 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight">
+              {article.title}
+            </h1>
 
-          <div className="mt-8 whitespace-pre-wrap leading-7">
-            {article.content}
+            {article.summary && (
+              <p className="mt-4 text-sm sm:text-base text-gray-600 font-medium leading-relaxed pb-6 border-b border-gray-100">
+                {article.summary}
+              </p>
+            )}
+
+            <div className="mt-8 prose prose-pink max-w-none text-gray-700 text-sm sm:text-base leading-relaxed whitespace-pre-wrap">
+              {article.content}
+            </div>
           </div>
-        </div>
-      </article>
-    </main>
+        </article>
+      </main>
+
+      <Footer />
+    </div>
   );
 }
