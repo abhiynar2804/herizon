@@ -71,11 +71,23 @@ export async function POST(request: Request) {
       );
     }
 
-    const evaluation = await evaluateSymptomRules(uniqueSymptomIds);
+    // Retrieve active cycle for the user to link symptom check to cycle tracking
+    const latestCycle = await prisma.cycle.findFirst({
+      where: {
+        userId: session.user.id,
+      },
+      orderBy: {
+        startDate: "desc",
+      },
+    });
+
+    const evaluation = await evaluateSymptomRules(uniqueSymptomIds, latestCycle?.phase);
 
     const symptomCheck = await prisma.symptomCheck.create({
       data: {
         userId: session.user.id,
+        cycleId: latestCycle?.id,
+        cyclePhase: latestCycle?.phase,
         notes,
         recommendation: evaluation.recommendation,
         urgencyLevel: evaluation.priority,
@@ -96,6 +108,25 @@ export async function POST(request: Request) {
       },
     });
 
+    // Also link symptoms to current Cycle in CycleSymptom table if active cycle exists
+    if (latestCycle) {
+      for (const symptomId of uniqueSymptomIds) {
+        await prisma.cycleSymptom.upsert({
+          where: {
+            cycleId_symptomId: {
+              cycleId: latestCycle.id,
+              symptomId,
+            },
+          },
+          update: {},
+          create: {
+            cycleId: latestCycle.id,
+            symptomId,
+          },
+        });
+      }
+    }
+
     return NextResponse.json(
       {
         id: symptomCheck.id,
@@ -104,6 +135,7 @@ export async function POST(request: Request) {
         ),
         result: evaluation,
         notes: symptomCheck.notes,
+        cyclePhase: latestCycle?.phase || null,
         createdAt: symptomCheck.createdAt,
       },
       { status: 201 },

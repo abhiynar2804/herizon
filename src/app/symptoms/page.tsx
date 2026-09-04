@@ -228,7 +228,7 @@ export default function SymptomsPage() {
 
         {/* Assessment Result */}
         {result && (
-          <section className="rounded-3xl bg-white p-6 sm:p-8 shadow-sm border border-purple-100">
+          <section className="rounded-3xl bg-white p-6 sm:p-8 shadow-sm border border-purple-100 space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-xl">📋</span>
               <h2 className="text-lg font-bold text-gray-900">
@@ -236,21 +236,23 @@ export default function SymptomsPage() {
               </h2>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="space-y-3">
               <p className="font-bold text-gray-900 text-base">
                 {result.title}
               </p>
 
-              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+              <div className="text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-line bg-purple-50/50 p-4 rounded-2xl border border-purple-100">
                 {result.recommendation}
-              </p>
+              </div>
 
-              <p className="text-xs text-gray-500">
-                Priority:{" "}
-                <span className="font-bold text-purple-700">
-                  {result.priority}
+              <div className="flex items-center gap-3 pt-1">
+                <span className="text-xs text-gray-500">
+                  Priority:{" "}
+                  <span className="font-bold text-purple-700">
+                    {result.priority}
+                  </span>
                 </span>
-              </p>
+              </div>
 
               {result.isEmergency && (
                 <div className="rounded-2xl bg-red-50 border border-red-200 p-4 text-xs text-red-700 font-medium">

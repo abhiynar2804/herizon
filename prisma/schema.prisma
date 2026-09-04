@@ -12,7 +12,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 ///////////////////////
@@ -214,6 +213,7 @@ model Cycle {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   symptoms CycleSymptom[]
+  symptomChecks SymptomCheck[]
 
   @@index([userId, startDate])
 }
@@ -276,6 +276,8 @@ model SymptomRuleCondition {
 model SymptomCheck {
   id              String   @id @default(cuid())
   userId          String
+  cycleId         String?
+  cyclePhase      CyclePhase?
 
   notes           String?
   recommendation  String?
@@ -284,6 +286,7 @@ model SymptomCheck {
   createdAt       DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cycle Cycle? @relation(fields: [cycleId], references: [id], onDelete: SetNull)
 
   symptoms SymptomCheckItem[]
 
