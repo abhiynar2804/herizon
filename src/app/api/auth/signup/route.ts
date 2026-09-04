@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const { name, email, password } = body;
+    const { name, email, password, role } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -21,6 +21,8 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    const assignedRole = role === "PARTNER" ? "PARTNER" : "USER";
 
     const normalizedEmail = email.toLowerCase().trim();
 
@@ -44,7 +46,7 @@ export async function POST(request: Request) {
         name: name.trim(),
         email: normalizedEmail,
         passwordHash,
-        role: "USER",
+        role: assignedRole,
       },
       select: {
         id: true,

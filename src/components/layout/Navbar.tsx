@@ -291,12 +291,23 @@ export default function Navbar({ userName, userEmail }: NavbarProps) {
 
                   <div className="mt-3 space-y-2.5">
                     <div className="p-2.5 rounded-xl bg-pink-50/50 border border-pink-100/60 text-xs">
-                      <div className="flex items-center gap-1.5 font-semibold text-pink-800">
+                      <div className="flex items-center justify-between font-semibold text-pink-800">
                         <span>❤️ Partner Sync Status</span>
                       </div>
                       <p className="text-gray-600 mt-1 text-[11px] leading-relaxed">
-                        Manage your partner invite or toggle granular privacy permissions anytime.
+                        {isPartner
+                          ? "View and accept incoming invitations on your Partner Dashboard."
+                          : "Manage your partner invite or toggle granular privacy permissions anytime."}
                       </p>
+                      {isPartner && (
+                        <Link
+                          href="/partner/dashboard"
+                          onClick={() => setNotificationsOpen(false)}
+                          className="inline-block mt-2 px-3 py-1 rounded-lg bg-pink-600 text-white text-[11px] font-semibold hover:bg-pink-700 transition"
+                        >
+                          Open Partner Dashboard
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>

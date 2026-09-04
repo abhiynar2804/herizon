@@ -36,7 +36,17 @@ function LoginForm() {
         return;
       }
 
-      router.push("/dashboard");
+      // Fetch session to inspect user role for smart redirect
+      const sessionRes = await fetch("/api/auth/session");
+      const sessionData = await sessionRes.json();
+
+      if (sessionData?.user?.role === "PARTNER") {
+        router.push("/partner/dashboard");
+      } else if (sessionData?.user?.role === "ADMIN") {
+        router.push("/admin");
+      } else {
+        router.push("/dashboard");
+      }
       router.refresh();
     } catch {
       setError("An unexpected error occurred. Please try again.");

@@ -128,6 +128,10 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  if (session.user.role === "PARTNER") {
+    redirect("/partner/dashboard");
+  }
+
   const userId = session.user.id;
 
   const [

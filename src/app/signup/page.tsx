@@ -1,14 +1,19 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AuthLayout from "@/components/auth/AuthLayout";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialRoleParam = searchParams.get("role") || searchParams.get("type");
 
+  const [role, setRole] = useState<"USER" | "PARTNER">(
+    initialRoleParam?.toUpperCase() === "PARTNER" ? "PARTNER" : "USER"
+  );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,6 +50,7 @@ export default function SignupPage() {
           name: name.trim(),
           email: email.trim(),
           password,
+          role,
         }),
       });
 
@@ -69,8 +75,12 @@ export default function SignupPage() {
         return;
       }
 
-      // New users proceed to onboarding to set up health & cycle profile
-      router.push("/onboarding");
+      // Redirect based on role
+      if (role === "PARTNER") {
+        router.push("/partner/dashboard");
+      } else {
+        router.push("/onboarding");
+      }
       router.refresh();
     } catch {
       setError("An unexpected network error occurred. Please try again.");
@@ -85,9 +95,79 @@ export default function SignupPage() {
     <AuthLayout
       activeTab="signup"
       title="Create Your Account"
-      subtitle="Join Herizon to start tracking your cycle, symptoms, and wellness."
+      subtitle={
+        role === "PARTNER"
+          ? "Join Herizon to support your partner with shared cycle insights."
+          : "Join Herizon to start tracking your cycle, symptoms, and wellness."
+      }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Account Type Role Selection */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+            I am joining as:
+          </label>
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => setRole("USER")}
+              className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                role === "USER"
+                  ? "bg-pink-50/80 border-pink-500 shadow-sm text-pink-900"
+                  : "bg-gray-50/50 border-gray-200 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center justify-between w-full mb-1">
+                <span className="text-base">🌸</span>
+                <span
+                  className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                    role === "USER"
+                      ? "border-pink-600 bg-pink-600 text-white"
+                      : "border-gray-300"
+                  }`}
+                >
+                  {role === "USER" && <span className="text-[10px]">✓</span>}
+                </span>
+              </div>
+              <span className="text-xs font-bold text-gray-900 block">
+                Primary User
+              </span>
+              <span className="text-[10px] text-gray-500 leading-tight block mt-0.5">
+                Track my cycle &amp; health
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRole("PARTNER")}
+              className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                role === "PARTNER"
+                  ? "bg-pink-50/80 border-pink-500 shadow-sm text-pink-900"
+                  : "bg-gray-50/50 border-gray-200 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center justify-between w-full mb-1">
+                <span className="text-base">❤️</span>
+                <span
+                  className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                    role === "PARTNER"
+                      ? "border-pink-600 bg-pink-600 text-white"
+                      : "border-gray-300"
+                  }`}
+                >
+                  {role === "PARTNER" && <span className="text-[10px]">✓</span>}
+                </span>
+              </div>
+              <span className="text-xs font-bold text-gray-900 block">
+                Partner Account
+              </span>
+              <span className="text-[10px] text-gray-500 leading-tight block mt-0.5">
+                Support &amp; view partner data
+              </span>
+            </button>
+          </div>
+        </div>
+
         {error && (
           <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200/80 text-red-700 text-xs sm:text-sm animate-shake">
             <svg
@@ -137,7 +217,7 @@ export default function SignupPage() {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Maya Patel"
+              placeholder="e.g. Alex Johnson"
               className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition-all text-gray-900 placeholder:text-gray-400"
             />
           </div>
@@ -405,11 +485,11 @@ export default function SignupPage() {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              <span>Creating your account...</span>
+              <span>Creating {role === "PARTNER" ? "Partner" : "User"} Account...</span>
             </>
           ) : (
             <>
-              <span>Create Account</span>
+              <span>Create {role === "PARTNER" ? "Partner" : "User"} Account</span>
               <svg
                 className="w-4 h-4"
                 fill="none"
@@ -439,5 +519,19 @@ export default function SignupPage() {
         </p>
       </form>
     </AuthLayout>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-rose-50/50">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-pink-600"></div>
+        </div>
+      }
+    >
+      <SignupForm />
+    </Suspense>
   );
 }
