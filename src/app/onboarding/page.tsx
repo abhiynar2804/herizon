@@ -1,29 +1,119 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
+type HealthProfileForm = {
+  dateOfBirth: string;
+  heightCm: string;
+  weightKg: string;
+  bloodGroup: string;
+  allergies: string;
+  medicalConditions: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  lastPeriodDate: string;
+  averageCycleLength: string;
+  averagePeriodLength: string;
+};
+
+const initialForm: HealthProfileForm = {
+  dateOfBirth: "",
+  heightCm: "",
+  weightKg: "",
+  bloodGroup: "",
+  allergies: "",
+  medicalConditions: "",
+  emergencyContactName: "",
+  emergencyContactPhone: "",
+  lastPeriodDate: "",
+  averageCycleLength: "28",
+  averagePeriodLength: "5",
+};
+
+function formatDateForInput(value: string | null | undefined) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toISOString().split("T")[0];
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
 
-  const [form, setForm] = useState({
-    dateOfBirth: "",
-    heightCm: "",
-    weightKg: "",
-    bloodGroup: "",
-    allergies: "",
-    medicalConditions: "",
-    emergencyContactName: "",
-    emergencyContactPhone: "",
-    lastPeriodDate: "",
-    averageCycleLength: "28",
-    averagePeriodLength: "5",
-  });
-
+  const [form, setForm] = useState<HealthProfileForm>(initialForm);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    async function loadHealthProfile() {
+      try {
+        const response = await fetch("/api/health-profile", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (response.status === 404) {
+          setIsEditing(false);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(data.message || "Failed to load health profile.");
+          return;
+        }
+
+        const profile = data.healthProfile;
+
+        setForm({
+          dateOfBirth: formatDateForInput(profile.dateOfBirth),
+          heightCm:
+            profile.heightCm !== null && profile.heightCm !== undefined
+              ? String(profile.heightCm)
+              : "",
+          weightKg:
+            profile.weightKg !== null && profile.weightKg !== undefined
+              ? String(profile.weightKg)
+              : "",
+          bloodGroup: profile.bloodGroup ?? "",
+          allergies: profile.allergies ?? "",
+          medicalConditions: profile.medicalConditions ?? "",
+          emergencyContactName: profile.emergencyContactName ?? "",
+          emergencyContactPhone: profile.emergencyContactPhone ?? "",
+          lastPeriodDate: formatDateForInput(profile.lastPeriodDate),
+          averageCycleLength:
+            profile.averageCycleLength !== null &&
+            profile.averageCycleLength !== undefined
+              ? String(profile.averageCycleLength)
+              : "28",
+          averagePeriodLength:
+            profile.averagePeriodLength !== null &&
+            profile.averagePeriodLength !== undefined
+              ? String(profile.averagePeriodLength)
+              : "5",
+        });
+
+        setIsEditing(true);
+      } catch {
+        setError("Something went wrong while loading your profile.");
+      } finally {
+        setLoadingProfile(false);
+      }
+    }
+
+    loadHealthProfile();
+  }, []);
 
   function handleChange(
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -42,7 +132,7 @@ export default function OnboardingPage() {
 
     try {
       const response = await fetch("/api/health-profile", {
-        method: "POST",
+        method: isEditing ? "PATCH" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -53,8 +143,10 @@ export default function OnboardingPage() {
           bloodGroup: form.bloodGroup || undefined,
           allergies: form.allergies || undefined,
           medicalConditions: form.medicalConditions || undefined,
-          emergencyContactName: form.emergencyContactName || undefined,
-          emergencyContactPhone: form.emergencyContactPhone || undefined,
+          emergencyContactName:
+            form.emergencyContactName || undefined,
+          emergencyContactPhone:
+            form.emergencyContactPhone || undefined,
           lastPeriodDate: form.lastPeriodDate || undefined,
           averageCycleLength: form.averageCycleLength
             ? Number(form.averageCycleLength)
@@ -68,7 +160,12 @@ export default function OnboardingPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Failed to create profile.");
+        setError(
+          data.message ||
+            (isEditing
+              ? "Failed to update profile."
+              : "Failed to create profile.")
+        );
         return;
       }
 
@@ -81,6 +178,22 @@ export default function OnboardingPage() {
     }
   }
 
+  if (loadingProfile) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50/70">
+        <Navbar />
+
+        <main className="flex-1 flex items-center justify-center px-4">
+          <div className="text-sm text-gray-500">
+            Loading your health profile...
+          </div>
+        </main>
+
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50/70">
       <Navbar />
@@ -90,11 +203,16 @@ export default function OnboardingPage() {
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-100/70 text-pink-700 text-xs font-semibold">
             📋 Health &amp; Cycle Baseline
           </div>
+
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-            Complete Your Health Profile
+            {isEditing
+              ? "Update Your Health Profile"
+              : "Complete Your Health Profile"}
           </h1>
+
           <p className="text-gray-500 text-xs sm:text-sm max-w-lg mx-auto">
-            Provide your baseline vitals and cycle preferences to calibrate accurate predictions and personalized recommendations.
+            Provide your baseline vitals and cycle preferences to calibrate
+            accurate predictions and personalized recommendations.
           </p>
         </header>
 
@@ -299,7 +417,13 @@ export default function OnboardingPage() {
             disabled={loading}
             className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-semibold text-sm shadow-md shadow-pink-500/25 transition-all active:scale-[0.99] disabled:opacity-60"
           >
-            {loading ? "Saving Profile..." : "Save & Open Dashboard →"}
+            {loading
+              ? isEditing
+                ? "Updating Profile..."
+                : "Saving Profile..."
+              : isEditing
+                ? "Update Health Profile →"
+                : "Save & Open Dashboard →"}
           </button>
         </form>
       </main>

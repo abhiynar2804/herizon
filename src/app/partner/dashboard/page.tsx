@@ -115,50 +115,8 @@ export default async function PartnerDashboardPage() {
   });
 
   if (!connection || !connection.sharingSetting) {
-    // Check if there is a PENDING invitation for this partner account
-    const pendingConnection = await prisma.partnerConnection.findFirst({
-      where: {
-        inviteeUserId: session.user.id,
-        status: "PENDING",
-      },
-      include: {
-        inviter: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
-
-    return (
-      <div className="min-h-screen flex flex-col bg-gray-50/70">
-        <Navbar userName={session.user.name} userEmail={session.user.email} />
-        <main className="flex-1 max-w-xl w-full mx-auto px-4 py-12 flex items-center justify-center">
-          {pendingConnection ? (
-            <PendingInviteCard
-              inviterName={pendingConnection.inviter.name}
-              inviterEmail={pendingConnection.inviter.email}
-              inviteToken={pendingConnection.inviteToken}
-              invitedAt={pendingConnection.invitedAt}
-            />
-          ) : (
-            <div className="rounded-3xl bg-white p-8 text-center border border-pink-100/60 shadow-xs space-y-3 w-full">
-              <span className="text-3xl block">❤️</span>
-              <h1 className="text-lg font-bold text-gray-900">
-                No Active Connection Found
-              </h1>
-              <p className="text-xs text-gray-500 leading-relaxed">
-                When your partner sends an invitation from their Herizon Partner Sync page to your registered email (<strong className="text-gray-700">{session.user.email}</strong>), your invitation will appear right here for you to accept.
-              </p>
-            </div>
-          )}
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+  redirect("/partner/requests");
+}
 
   const settings = connection.sharingSetting;
 

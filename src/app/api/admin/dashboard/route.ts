@@ -11,14 +11,14 @@ export async function GET() {
     if (!session?.user?.id) {
       return NextResponse.json(
         { message: "Unauthorized" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
     if (session.user.role !== "ADMIN") {
       return NextResponse.json(
         { message: "Forbidden" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -37,27 +37,39 @@ export async function GET() {
       activeRules,
       totalArticles,
       publishedArticles,
+      auditLogsCount,
+      recentAuditLogs,
     ] = await Promise.all([
       prisma.user.count(),
 
       prisma.user.count({
-        where: { isActive: true },
+        where: {
+          isActive: true,
+        },
       }),
 
       prisma.user.count({
-        where: { isActive: false },
+        where: {
+          isActive: false,
+        },
       }),
 
       prisma.user.count({
-        where: { role: "PARTNER" },
+        where: {
+          role: "PARTNER",
+        },
       }),
 
       prisma.user.count({
-        where: { role: "ADMIN" },
+        where: {
+          role: "ADMIN",
+        },
       }),
 
       prisma.partnerConnection.count({
-        where: { status: "ACCEPTED" },
+        where: {
+          status: "ACCEPTED",
+        },
       }),
 
       prisma.symptomCheck.count(),
@@ -67,67 +79,72 @@ export async function GET() {
       prisma.symptom.count(),
 
       prisma.symptom.count({
-        where: { isActive: true },
+        where: {
+          isActive: true,
+        },
       }),
 
       prisma.symptomRule.count(),
 
       prisma.symptomRule.count({
-        where: { isActive: true },
+        where: {
+          isActive: true,
+        },
       }),
 
       prisma.article.count(),
 
       prisma.article.count({
-        where: { status: "PUBLISHED" },
+        where: {
+          status: "PUBLISHED",
+        },
+      }),
+
+      prisma.adminAuditLog.count(),
+
+      prisma.adminAuditLog.findMany({
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 10,
+        select: {
+          id: true,
+          action: true,
+          targetType: true,
+          targetId: true,
+          details: true,
+          createdAt: true,
+        },
       }),
     ]);
 
     return NextResponse.json({
-      users: {
-        total: totalUsers,
-        active: activeUsers,
-        inactive: inactiveUsers,
-        partners: totalPartners,
-        admins: totalAdmins,
+      stats: {
+        totalUsers,
+        activeUsers,
+        inactiveUsers,
+        totalPartners,
+        totalAdmins,
+        totalConnections,
+        totalSymptomChecks,
+        totalCycles,
+        totalSymptoms,
+        activeSymptoms,
+        totalSymptomRules: totalRules,
+        activeSymptomRules: activeRules,
+        totalArticles,
+        publishedArticles,
+        auditLogsCount,
       },
 
-      connections: {
-        total: totalConnections,
-      },
-
-      symptomChecks: {
-        total: totalSymptomChecks,
-      },
-
-      cycles: {
-        total: totalCycles,
-      },
-
-      symptoms: {
-        total: totalSymptoms,
-        active: activeSymptoms,
-      },
-
-      rules: {
-        total: totalRules,
-        active: activeRules,
-      },
-
-      articles: {
-        total: totalArticles,
-        published: publishedArticles,
-      },
+      recentAuditLogs,
     });
   } catch (error) {
-    console.error(
-      "GET /api/admin/dashboard error:",
-      error,
-    );
+    console.error("GET /api/admin/dashboard error:", error);
 
     return NextResponse.json(
       { message: "Failed to fetch admin dashboard." },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

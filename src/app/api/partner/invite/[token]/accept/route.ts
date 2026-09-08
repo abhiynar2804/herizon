@@ -4,39 +4,25 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-type RouteContext = {
-  params: Promise<{ token: string }>;
-};
-
 export async function POST(
-  _request: Request,
-  context: RouteContext,
+  req: Request,
+  { params }: { params: Promise<{ token: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     if (session.user.role !== "PARTNER") {
       return NextResponse.json(
-        { message: "Only partner users can accept invitations." },
+        { error: "Only partner accounts can accept invitations." },
         { status: 403 },
       );
     }
 
-    const { token } = await context.params;
-
-    if (!token) {
-      return NextResponse.json(
-        { message: "Invalid invitation token." },
-        { status: 400 },
-      );
-    }
+    const { token } = await params;
 
     const connection = await prisma.partnerConnection.findUnique({
       where: {
@@ -46,44 +32,67 @@ export async function POST(
 
     if (!connection) {
       return NextResponse.json(
-        { message: "Invitation not found." },
+        { error: "Partner invitation not found." },
         { status: 404 },
       );
     }
 
     if (connection.inviteeUserId !== session.user.id) {
       return NextResponse.json(
-        { message: "You are not authorized to accept this invitation." },
+        { error: "This invitation does not belong to your account." },
         { status: 403 },
       );
     }
 
     if (connection.status !== "PENDING") {
       return NextResponse.json(
-        { message: "This invitation is no longer pending." },
+        { error: "This invitation is no longer pending." },
         { status: 409 },
       );
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      const updatedConnection =
-        await tx.partnerConnection.update({
-          where: {
-            id: connection.id,
-          },
-          data: {
-            status: "ACCEPTED",
-            acceptedAt: new Date(),
-          },
-          select: {
-            id: true,
-            status: true,
-            acceptedAt: true,
-          },
-        });
+    // A5: one active partner connection per user.
+    const existingActiveConnection = await prisma.partnerConnection.findFirst({
+      where: {
+        status: "ACCEPTED",
+        OR: [
+          { inviterUserId: connection.inviterUserId },
+          { inviteeUserId: connection.inviterUserId },
+          { inviterUserId: connection.inviteeUserId },
+          { inviteeUserId: connection.inviteeUserId },
+        ],
+      },
+    });
 
-      await tx.partnerSharingSetting.create({
+    if (existingActiveConnection) {
+      return NextResponse.json(
+        {
+          error: "One of these users already has an active partner connection.",
+        },
+        { status: 409 },
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.partnerConnection.update({
+        where: {
+          id: connection.id,
+        },
         data: {
+          status: "ACCEPTED",
+          acceptedAt: new Date(),
+          disconnectedAt: null,
+        },
+      });
+
+      // Reuse existing sharing settings if this connection
+      // was previously accepted.
+      await tx.partnerSharingSetting.upsert({
+        where: {
+          connectionId: connection.id,
+        },
+        update: {},
+        create: {
           connectionId: connection.id,
         },
       });
@@ -91,29 +100,22 @@ export async function POST(
       await tx.notification.create({
         data: {
           userId: connection.inviterUserId,
+          type: "SYSTEM",
           title: "Partner Invitation Accepted",
-          message: "Your partner invitation has been accepted.",
-          type: "PARTNER_INVITE",
-          channel: "IN_APP",
-          status: "PENDING",
+          message: `${session.user.name || "Your partner"} accepted your partner invitation.`,
         },
       });
-
-      return updatedConnection;
     });
 
     return NextResponse.json({
+      success: true,
       message: "Partner invitation accepted successfully.",
-      connection: result,
     });
   } catch (error) {
-    console.error(
-      "POST /api/partner/invite/[token]/accept error:",
-      error,
-    );
+    console.error("Partner invitation accept error:", error);
 
     return NextResponse.json(
-      { message: "Failed to accept partner invitation." },
+      { error: "Failed to accept partner invitation." },
       { status: 500 },
     );
   }

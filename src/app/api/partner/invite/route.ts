@@ -1,174 +1,170 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { randomBytes } from "crypto";
+import crypto from "crypto";
+import { z } from "zod";
 
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { partnerInviteSchema } from "@/lib/validations/partner";
 
-export async function POST(request: Request) {
+const inviteSchema = z.object({
+  email: z.string().email(),
+});
+
+export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 },
+        { error: "Unauthorized" },
+        { status: 401 }
       );
     }
 
     if (session.user.role !== "USER") {
       return NextResponse.json(
-        { message: "Only primary users can send partner invites." },
-        { status: 403 },
+        { error: "Only users can send partner invitations." },
+        { status: 403 }
       );
     }
 
-    const body = await request.json();
+    const body = await req.json();
+    const parsed = inviteSchema.safeParse(body);
 
-    const result = partnerInviteSchema.safeParse(body);
-
-    if (!result.success) {
+    if (!parsed.success) {
       return NextResponse.json(
-        {
-          message: "Invalid partner email.",
-          errors: result.error.flatten(),
-        },
-        { status: 400 },
+        { error: "Invalid email address." },
+        { status: 400 }
       );
     }
 
-    const email = result.data.email.toLowerCase();
+    const { email } = parsed.data;
 
-    const inviter = await prisma.user.findUnique({
-      where: {
-        id: session.user.id,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-      },
-    });
-
-    if (!inviter) {
+    if (email.toLowerCase() === session.user.email?.toLowerCase()) {
       return NextResponse.json(
-        { message: "User not found." },
-        { status: 404 },
-      );
-    }
-
-    if (email === inviter.email.toLowerCase()) {
-      return NextResponse.json(
-        { message: "You cannot invite yourself." },
-        { status: 400 },
+        { error: "You cannot invite yourself." },
+        { status: 400 }
       );
     }
 
     const invitee = await prisma.user.findUnique({
       where: {
-        email,
-      },
-      select: {
-        id: true,
-        role: true,
-        isActive: true,
+        email: email.toLowerCase(),
       },
     });
 
-    if (!invitee) {
+    if (!invitee || !invitee.isActive || invitee.role !== "PARTNER") {
       return NextResponse.json(
-        { message: "No registered user found with this email." },
-        { status: 404 },
+        { error: "No active partner account found with this email." },
+        { status: 404 }
       );
     }
 
-    if (!invitee.isActive) {
+    // A5: The primary user can have only one active partner connection.
+    const activeConnection = await prisma.partnerConnection.findFirst({
+      where: {
+        status: "ACCEPTED",
+        OR: [
+          { inviterUserId: session.user.id },
+          { inviteeUserId: session.user.id },
+        ],
+      },
+    });
+
+    if (activeConnection) {
       return NextResponse.json(
-        { message: "This user account is inactive." },
-        { status: 400 },
+        { error: "You already have an active partner connection. Disconnect it before sending a new invitation." },
+        { status: 409 }
       );
     }
 
-    if (invitee.role !== "PARTNER") {
-      return NextResponse.json(
-        { message: "This user is not eligible as a partner." },
-        { status: 400 },
-      );
-    }
-
+    // Find an existing connection between this exact pair.
     const existingConnection =
-      await prisma.partnerConnection.findFirst({
+      await prisma.partnerConnection.findUnique({
         where: {
-          OR: [
-            {
-              inviterUserId: inviter.id,
-              inviteeUserId: invitee.id,
-            },
-            {
-              inviterUserId: invitee.id,
-              inviteeUserId: inviter.id,
-            },
-          ],
+          inviterUserId_inviteeUserId: {
+            inviterUserId: session.user.id,
+            inviteeUserId: invitee.id,
+          },
         },
       });
 
-    if (existingConnection) {
-      if (existingConnection.status === "ACCEPTED") {
-        return NextResponse.json(
-          { message: "A partner connection already exists." },
-          { status: 409 },
-        );
-      }
-
-      if (existingConnection.status === "PENDING") {
-        return NextResponse.json(
-          { message: "A partner invitation is already pending." },
-          { status: 409 },
-        );
-      }
+    // Existing pending invitation.
+    if (existingConnection?.status === "PENDING") {
+      return NextResponse.json(
+        { error: "An invitation has already been sent to this partner." },
+        { status: 409 }
+      );
     }
 
-    const inviteToken = randomBytes(32).toString("hex");
+    // Reuse an old DISCONNECTED or REJECTED connection.
+    if (
+      existingConnection?.status === "DISCONNECTED" ||
+      existingConnection?.status === "REJECTED"
+    ) {
+      const inviteToken = crypto.randomBytes(32).toString("hex");
+
+      const connection = await prisma.partnerConnection.update({
+        where: {
+          id: existingConnection.id,
+        },
+        data: {
+          status: "PENDING",
+          inviteToken,
+          invitedAt: new Date(),
+          acceptedAt: null,
+          disconnectedAt: null,
+        },
+      });
+
+      await prisma.notification.create({
+        data: {
+          userId: invitee.id,
+          type: "PARTNER_INVITE",
+          title: "New Partner Invitation",
+          message: `${session.user.name || "A user"} has invited you to connect as their partner.`,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        connectionId: connection.id,
+        message: "Partner invitation sent successfully.",
+      });
+    }
+
+    // No previous connection — create a new one.
+    const inviteToken = crypto.randomBytes(32).toString("hex");
 
     const connection = await prisma.partnerConnection.create({
       data: {
-        inviterUserId: inviter.id,
+        inviterUserId: session.user.id,
         inviteeUserId: invitee.id,
-        inviteToken,
         status: "PENDING",
-      },
-      select: {
-        id: true,
-        status: true,
-        invitedAt: true,
+        inviteToken,
       },
     });
 
     await prisma.notification.create({
       data: {
         userId: invitee.id,
-        title: "Partner Invitation",
-        message: `${inviter.name} has invited you to connect as a partner.`,
         type: "PARTNER_INVITE",
-        channel: "IN_APP",
-        status: "PENDING",
+        title: "New Partner Invitation",
+        message: `${session.user.name || "A user"} has invited you to connect as their partner.`,
       },
     });
 
-    return NextResponse.json(
-      {
-        message: "Partner invitation sent successfully.",
-        connection,
-      },
-      { status: 201 },
-    );
+    return NextResponse.json({
+      success: true,
+      connectionId: connection.id,
+      message: "Partner invitation sent successfully.",
+    });
   } catch (error) {
-    console.error("POST /api/partner/invite error:", error);
+    console.error("Partner invitation error:", error);
 
     return NextResponse.json(
-      { message: "Failed to send partner invitation." },
-      { status: 500 },
+      { error: "Failed to send partner invitation." },
+      { status: 500 }
     );
   }
 }
