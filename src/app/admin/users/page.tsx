@@ -51,7 +51,7 @@ export default function AdminUsersPage() {
       setError("");
 
       const response = await fetch(`/api/admin/users/${userId}/role`, {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: newRole }),
       });
@@ -76,7 +76,7 @@ export default function AdminUsersPage() {
       setError("");
 
       const response = await fetch(`/api/admin/users/${userId}/status`, {
-        method: "PUT",
+      method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !currentStatus }),
       });

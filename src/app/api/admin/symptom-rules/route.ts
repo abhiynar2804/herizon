@@ -50,7 +50,7 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(rules);
+    return NextResponse.json({ rules });
   } catch (error) {
     console.error("GET /api/admin/symptom-rules error:", error);
 

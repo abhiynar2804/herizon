@@ -9,19 +9,13 @@ async function requireAdmin() {
 
   if (!session?.user?.id) {
     return {
-      response: NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 },
-      ),
+      response: NextResponse.json({ message: "Unauthorized" }, { status: 401 }),
     };
   }
 
   if (session.user.role !== "ADMIN") {
     return {
-      response: NextResponse.json(
-        { message: "Forbidden" },
-        { status: 403 },
-      ),
+      response: NextResponse.json({ message: "Forbidden" }, { status: 403 }),
     };
   }
 
@@ -81,8 +75,9 @@ export async function GET(request: Request) {
         createdAt: "desc",
       },
     });
-
-    return NextResponse.json(users);
+    return NextResponse.json({
+      users,
+    });
   } catch (error) {
     console.error("GET /api/admin/users error:", error);
 

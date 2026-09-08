@@ -124,7 +124,7 @@ export default function PartnerManagementPage() {
 
     try {
       const response = await fetch("/api/partner/sharing", {
-        method: "PUT",
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },

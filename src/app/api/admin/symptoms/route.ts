@@ -29,7 +29,7 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(symptoms);
+    return NextResponse.json({ symptoms });
   } catch (error) {
     console.error("GET /api/admin/symptoms error:", error);
 
