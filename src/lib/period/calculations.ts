@@ -1,4 +1,4 @@
-import type { CyclePhase } from "@prisma/client";
+import { CyclePhase } from "@/generated/prisma/client";
 
 export function calculateCycleLength(
   previousStartDate: Date,
