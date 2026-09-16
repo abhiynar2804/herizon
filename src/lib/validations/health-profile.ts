@@ -1,7 +1,15 @@
 import { z } from "zod";
 
 export const healthProfileSchema = z.object({
-  dateOfBirth: z.coerce.date(),
+  dateOfBirth: z.coerce.date().refine((dateOfBirth) => {
+    const latestAllowedBirthDate = new Date();
+    latestAllowedBirthDate.setUTCHours(0, 0, 0, 0);
+    latestAllowedBirthDate.setUTCFullYear(
+      latestAllowedBirthDate.getUTCFullYear() - 18,
+    );
+
+    return dateOfBirth <= latestAllowedBirthDate;
+  }, "You must be at least 18 years old"),
 
   heightCm: z
     .number()
@@ -14,11 +22,7 @@ export const healthProfileSchema = z.object({
     .min(25, "Weight must be at least 25 kg")
     .max(300, "Weight must be at most 300 kg"),
 
-  bloodGroup: z
-    .string()
-    .trim()
-    .max(10, "Invalid blood group")
-    .optional(),
+  bloodGroup: z.string().trim().max(10, "Invalid blood group").optional(),
 
   allergies: z
     .string()

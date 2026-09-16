@@ -45,6 +45,16 @@ function formatDateForInput(value: string | null | undefined) {
   return date.toISOString().split("T")[0];
 }
 
+function getLatestAllowedBirthDate() {
+  const latestAllowedBirthDate = new Date();
+  latestAllowedBirthDate.setUTCHours(0, 0, 0, 0);
+  latestAllowedBirthDate.setUTCFullYear(
+    latestAllowedBirthDate.getUTCFullYear() - 18,
+  );
+
+  return latestAllowedBirthDate.toISOString().split("T")[0];
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
 
@@ -116,7 +126,7 @@ export default function OnboardingPage() {
   }, []);
 
   function handleChange(
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) {
     setForm({
       ...form,
@@ -143,10 +153,8 @@ export default function OnboardingPage() {
           bloodGroup: form.bloodGroup || undefined,
           allergies: form.allergies || undefined,
           medicalConditions: form.medicalConditions || undefined,
-          emergencyContactName:
-            form.emergencyContactName || undefined,
-          emergencyContactPhone:
-            form.emergencyContactPhone || undefined,
+          emergencyContactName: form.emergencyContactName || undefined,
+          emergencyContactPhone: form.emergencyContactPhone || undefined,
           lastPeriodDate: form.lastPeriodDate || undefined,
           averageCycleLength: form.averageCycleLength
             ? Number(form.averageCycleLength)
@@ -164,7 +172,7 @@ export default function OnboardingPage() {
           data.message ||
             (isEditing
               ? "Failed to update profile."
-              : "Failed to create profile.")
+              : "Failed to create profile."),
         );
         return;
       }
@@ -238,9 +246,10 @@ export default function OnboardingPage() {
                   name="dateOfBirth"
                   type="date"
                   value={form.dateOfBirth}
+                  max={getLatestAllowedBirthDate()}
                   onChange={handleChange}
                   required
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs text-pink-500 sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                 />
               </div>
 
@@ -257,7 +266,7 @@ export default function OnboardingPage() {
                   required
                   min="50"
                   max="250"
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs text-pink-500 sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                 />
               </div>
 
@@ -275,7 +284,7 @@ export default function OnboardingPage() {
                   required
                   min="20"
                   max="300"
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs text-pink-500 sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                 />
               </div>
             </div>
@@ -290,7 +299,7 @@ export default function OnboardingPage() {
                   placeholder="e.g. O+, A-, B+"
                   value={form.bloodGroup}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs text-pink-500 sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                 />
               </div>
 
@@ -303,7 +312,7 @@ export default function OnboardingPage() {
                   placeholder="e.g. Penicillin, Peanuts, None"
                   value={form.allergies}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs text-pink-500 sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                 />
               </div>
             </div>
@@ -317,7 +326,7 @@ export default function OnboardingPage() {
                 placeholder="e.g. PCOS, Endometriosis, Thyroid, None"
                 value={form.medicalConditions}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs text-pink-500 sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
               />
             </div>
           </div>
@@ -338,7 +347,7 @@ export default function OnboardingPage() {
                   type="date"
                   value={form.lastPeriodDate}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs text-pink-500 sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                 />
               </div>
 
@@ -354,7 +363,7 @@ export default function OnboardingPage() {
                   onChange={handleChange}
                   min="20"
                   max="60"
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs text-pink-500 sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                 />
               </div>
 
@@ -370,7 +379,7 @@ export default function OnboardingPage() {
                   onChange={handleChange}
                   min="1"
                   max="14"
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs text-pink-500 sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                 />
               </div>
             </div>
@@ -392,7 +401,7 @@ export default function OnboardingPage() {
                   placeholder="e.g. Partner, Parent, Doctor"
                   value={form.emergencyContactName}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs text-pink-500 sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                 />
               </div>
 
@@ -405,7 +414,7 @@ export default function OnboardingPage() {
                   placeholder="+1 (555) 000-0000"
                   value={form.emergencyContactPhone}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs text-pink-500 sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                 />
               </div>
             </div>

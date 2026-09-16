@@ -33,15 +33,15 @@ export default function AuthLayout({
             <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-pink-600 via-rose-600 to-purple-700 bg-clip-text text-transparent">
               Herizon
             </span>
-            <span className="hidden sm:inline-block ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-pink-100/70 text-pink-700">
+            {/* <span className="hidden sm:inline-block ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-pink-100/70 text-pink-700">
               Women&apos;s Health &amp; Cycle Care
-            </span>
+            </span> */}
           </div>
         </Link>
 
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
+        <div className="flex items-center gap-1.5 text-xs text-gray-800 font-medium">
           <svg
-            className="w-4 h-4 text-emerald-600"
+            className="w-4 h-4 text-emerald-500"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -59,7 +59,7 @@ export default function AuthLayout({
 
       {/* Main Content Area */}
       <main className="flex-1 flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
-        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-baseline">
           {/* Left Hero / Brand Showcase (visible on lg+) */}
           <div className="hidden lg:flex lg:col-span-5 flex-col justify-center space-y-6 pr-4">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-pink-100/80 text-pink-700 text-xs font-semibold tracking-wide w-fit">
