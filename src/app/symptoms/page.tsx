@@ -208,7 +208,7 @@ export default function SymptomsPage() {
               maxLength={2000}
               rows={3}
               placeholder="Describe pain intensity, timing, or anything else you notice..."
-              className="w-full rounded-2xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+              className="w-full rounded-2xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
             />
           </div>
 

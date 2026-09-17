@@ -50,7 +50,7 @@ export default function AIPage() {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Unable to load conversations."
+        err instanceof Error ? err.message : "Unable to load conversations.",
       );
     } finally {
       setPageLoading(false);
@@ -73,7 +73,7 @@ export default function AIPage() {
       setMessages(data.session.messages ?? []);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Unable to load conversation."
+        err instanceof Error ? err.message : "Unable to load conversation.",
       );
     }
   }
@@ -98,7 +98,7 @@ export default function AIPage() {
       setMessages([]);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Unable to create conversation."
+        err instanceof Error ? err.message : "Unable to create conversation.",
       );
     }
   }
@@ -140,9 +140,7 @@ export default function AIPage() {
         setSessions(sessionsData.sessions ?? []);
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Unable to send message."
-      );
+      setError(err instanceof Error ? err.message : "Unable to send message.");
     } finally {
       setLoading(false);
     }
@@ -171,7 +169,7 @@ export default function AIPage() {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Unable to delete conversation."
+        err instanceof Error ? err.message : "Unable to delete conversation.",
       );
     }
   }
@@ -195,7 +193,9 @@ export default function AIPage() {
               {pageLoading ? (
                 <p className="text-xs text-gray-400 p-2">Loading sessions...</p>
               ) : sessions.length === 0 ? (
-                <p className="text-xs text-gray-400 p-2">No conversations yet.</p>
+                <p className="text-xs text-gray-400 p-2">
+                  No conversations yet.
+                </p>
               ) : (
                 sessions.map((session) => (
                   <div
@@ -238,7 +238,8 @@ export default function AIPage() {
                     Herizon AI Companion
                   </h1>
                   <p className="text-[11px] text-gray-400">
-                    General women&apos;s health, cycle education, and hormone guidance.
+                    General women&apos;s health, cycle education, and hormone
+                    guidance.
                   </p>
                 </div>
               </div>
@@ -260,7 +261,8 @@ export default function AIPage() {
                       How can Herizon AI help you today?
                     </h2>
                     <p className="text-xs text-gray-500 mt-1 max-w-sm">
-                      Ask about cycle phases, nutrition for PCOS, PMS remedies, or sleep optimization.
+                      Ask about cycle phases, nutrition for PCOS, PMS remedies,
+                      or sleep optimization.
                     </p>
                   </div>
 
@@ -327,7 +329,7 @@ export default function AIPage() {
                   }}
                   maxLength={2000}
                   placeholder="Ask Herizon AI about cycle, nutrition, or wellness..."
-                  className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs text-gray-700 sm:text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                   disabled={loading}
                 />
 
@@ -341,7 +343,8 @@ export default function AIPage() {
               </div>
 
               <p className="mt-2 text-[10px] text-gray-400 text-center">
-                Herizon AI provides educational wellness guidance and is not a clinical medical substitute.
+                Herizon AI provides educational wellness guidance and is not a
+                clinical medical substitute.
               </p>
             </div>
           </section>

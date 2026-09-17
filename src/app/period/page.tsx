@@ -152,7 +152,7 @@ export default function PeriodPage() {
                   type="date"
                   value={startDate}
                   onChange={(event) => setStartDate(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                   required
                 />
               </div>
@@ -169,7 +169,7 @@ export default function PeriodPage() {
                   type="date"
                   value={endDate}
                   onChange={(event) => setEndDate(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
                 />
               </div>
             </div>
@@ -188,7 +188,7 @@ export default function PeriodPage() {
                 onChange={(event) => setMood(event.target.value)}
                 maxLength={100}
                 placeholder="e.g. Energetic, mild cramps, calm, tender breasts"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm text-pink-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
               />
             </div>
 
@@ -206,7 +206,7 @@ export default function PeriodPage() {
                 maxLength={2000}
                 rows={3}
                 placeholder="Any dietary notes, sleep changes, or flow intensity..."
-                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
               />
             </div>
 

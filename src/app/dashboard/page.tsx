@@ -95,17 +95,31 @@ function getPhaseDetails(phase: string | null | undefined) {
 // Calculate cycle day & progress
 function calculateCycleProgress(
   startDate: Date | null | undefined,
-  averageLength: number = 28
+  averageLength: number = 28,
 ) {
-  if (!startDate) return { day: 1, total: averageLength, progressPct: 0, daysLeft: averageLength };
+  if (!startDate)
+    return {
+      day: 1,
+      total: averageLength,
+      progressPct: 0,
+      daysLeft: averageLength,
+    };
 
   const start = new Date(startDate);
   const now = new Date();
   const diffTime = Math.abs(now.getTime() - start.getTime());
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-  const currentCycleDay = diffDays > 0 ? (diffDays % averageLength === 0 ? averageLength : diffDays % averageLength) : 1;
-  const progressPct = Math.min(100, Math.round((currentCycleDay / averageLength) * 100));
+  const currentCycleDay =
+    diffDays > 0
+      ? diffDays % averageLength === 0
+        ? averageLength
+        : diffDays % averageLength
+      : 1;
+  const progressPct = Math.min(
+    100,
+    Math.round((currentCycleDay / averageLength) * 100),
+  );
   const daysLeft = Math.max(0, averageLength - currentCycleDay);
 
   return { day: currentCycleDay, total: averageLength, progressPct, daysLeft };
@@ -216,7 +230,10 @@ export default async function DashboardPage() {
   const currentPhase = latestCycle?.phase || "UNKNOWN";
   const phaseInfo = getPhaseDetails(currentPhase);
   const cycleLength = healthProfile.averageCycleLength || 28;
-  const cycleProgress = calculateCycleProgress(latestCycle?.startDate, cycleLength);
+  const cycleProgress = calculateCycleProgress(
+    latestCycle?.startDate,
+    cycleLength,
+  );
 
   // Time of day greeting
   const hour = new Date().getHours();
@@ -241,15 +258,18 @@ export default async function DashboardPage() {
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold tracking-wide border border-white/20">
                 <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                {phaseInfo.name} &bull; Day {cycleProgress.day} of {cycleProgress.total}
+                {phaseInfo.name} &bull; Day {cycleProgress.day} of{" "}
+                {cycleProgress.total}
               </div>
 
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
-                {timeGreeting}, {session.user.name?.split(" ")[0] || "Friend"}! ✨
+                {timeGreeting}, {session.user.name?.split(" ")[0] || "Friend"}!
+                ✨
               </h1>
 
               <p className="text-white/90 text-sm sm:text-base max-w-xl leading-relaxed">
-                {phaseInfo.tagline}. Today is a wonderful day to tune into your body and practice personalized self-care.
+                {phaseInfo.tagline}. Today is a wonderful day to tune into your
+                body and practice personalized self-care.
               </p>
             </div>
 
@@ -327,7 +347,9 @@ export default async function DashboardPage() {
               <span className="text-gray-500">
                 {healthProfile.weightKg}kg &bull; {healthProfile.heightCm}cm
               </span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${bmiColor}`}>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${bmiColor}`}
+              >
                 {bmiCategory}
               </span>
             </div>
@@ -375,7 +397,10 @@ export default async function DashboardPage() {
             </div>
             <div className="mt-2 flex items-center justify-between text-xs">
               <span className="text-gray-500">24/7 Companion</span>
-              <Link href="/ai" className="font-semibold text-pink-600 hover:underline">
+              <Link
+                href="/ai"
+                className="font-semibold text-pink-600 hover:underline"
+              >
                 Start Chat →
               </Link>
             </div>
@@ -420,7 +445,9 @@ export default async function DashboardPage() {
                 <div className="w-full h-3.5 bg-pink-50 rounded-full overflow-hidden p-0.5 border border-pink-100">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 transition-all duration-500"
-                    style={{ width: `${Math.max(5, cycleProgress.progressPct)}%` }}
+                    style={{
+                      width: `${Math.max(5, cycleProgress.progressPct)}%`,
+                    }}
                   />
                 </div>
 
@@ -513,7 +540,9 @@ export default async function DashboardPage() {
                       <div>
                         <p className="font-semibold text-gray-900">
                           {formatDate(cycle.startDate)}
-                          {cycle.endDate ? ` → ${formatDate(cycle.endDate)}` : " (Ongoing)"}
+                          {cycle.endDate
+                            ? ` → ${formatDate(cycle.endDate)}`
+                            : " (Ongoing)"}
                         </p>
                         <p className="text-gray-400 text-[11px] mt-0.5">
                           Phase: {cycle.phase}
@@ -522,7 +551,9 @@ export default async function DashboardPage() {
 
                       <div className="flex items-center gap-2">
                         <span className="px-2.5 py-1 rounded-full bg-pink-50 text-pink-700 font-semibold text-[11px]">
-                          {cycle.periodLength ? `${cycle.periodLength} days` : "Active"}
+                          {cycle.periodLength
+                            ? `${cycle.periodLength} days`
+                            : "Active"}
                         </span>
                       </div>
                     </div>
@@ -544,7 +575,9 @@ export default async function DashboardPage() {
                   <h3 className="text-base font-bold text-gray-900">
                     Phase Care Blueprint
                   </h3>
-                  <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${phaseInfo.badgeBg}`}>
+                  <span
+                    className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${phaseInfo.badgeBg}`}
+                  >
                     {phaseInfo.name}
                   </span>
                 </div>
@@ -635,13 +668,14 @@ export default async function DashboardPage() {
             </div>
 
             {/* Herizon AI Prompt Starter Card */}
-            <div className="rounded-3xl bg-gradient-to-br from-purple-900 to-indigo-900 text-white p-6 shadow-md">
+            {/* <div className="rounded-3xl bg-gradient-to-br from-purple-900 to-indigo-900 text-white p-6 shadow-md">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 rounded-xl bg-white/20 text-sm">🤖</span>
                 <h3 className="text-sm font-bold">Herizon AI Assistant</h3>
               </div>
               <p className="text-white/80 text-xs mt-2 leading-relaxed">
-                Need immediate answers about your cycle, hormonal balance, or PCOS nutrition?
+                Need immediate answers about your cycle, hormonal balance, or
+                PCOS nutrition?
               </p>
 
               <div className="mt-4 space-y-2">
@@ -665,7 +699,7 @@ export default async function DashboardPage() {
               >
                 Open Herizon AI Chat
               </Link>
-            </div>
+            </div> */}
           </div>
         </section>
 
@@ -684,8 +718,18 @@ export default async function DashboardPage() {
               href="/onboarding"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-pink-600 hover:text-pink-700 hover:underline"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
               </svg>
               <span>Edit Profile</span>
             </Link>
@@ -693,7 +737,9 @@ export default async function DashboardPage() {
 
           <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
             <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-100">
-              <span className="text-gray-400 block text-[11px]">Blood Group</span>
+              <span className="text-gray-400 block text-[11px]">
+                Blood Group
+              </span>
               <span className="font-bold text-gray-900 text-sm mt-0.5 block">
                 {healthProfile.bloodGroup || "Not specified"}
               </span>
@@ -707,7 +753,9 @@ export default async function DashboardPage() {
             </div>
 
             <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-100">
-              <span className="text-gray-400 block text-[11px]">Medical Notes</span>
+              <span className="text-gray-400 block text-[11px]">
+                Medical Notes
+              </span>
               <span className="font-semibold text-gray-800 mt-0.5 block truncate">
                 {healthProfile.medicalConditions || "None recorded"}
               </span>

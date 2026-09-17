@@ -190,7 +190,7 @@ export default function Navbar({ userName, userEmail }: NavbarProps) {
           <div className="flex items-center gap-2.5">
             {!isPartner && (
               <div className="relative" ref={quickLogRef}>
-                <button
+                {/* <button
                   type="button"
                   onClick={() => setQuickLogOpen(!quickLogOpen)}
                   className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-500 text-white text-xs font-semibold shadow-xs shadow-pink-500/20 hover:from-pink-700 hover:to-rose-600 transition-all active:scale-95"
@@ -209,7 +209,7 @@ export default function Navbar({ userName, userEmail }: NavbarProps) {
                     />
                   </svg>
                   <span>Log</span>
-                </button>
+                </button>*/}
 
                 {quickLogOpen && (
                   <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl shadow-pink-950/10 border border-pink-100 p-2 z-50 animate-in fade-in slide-in-from-top-2">
