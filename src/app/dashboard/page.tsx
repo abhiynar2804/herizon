@@ -155,6 +155,7 @@ export default async function DashboardPage() {
     symptomChecks,
     chatSessions,
     articles,
+    notifications,
   ] = await Promise.all([
     prisma.healthProfile.findUnique({
       where: { userId },
@@ -202,6 +203,12 @@ export default async function DashboardPage() {
         category: true,
       },
       orderBy: { publishedAt: "desc" },
+    }),
+
+    prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 4,
     }),
   ]);
 
@@ -668,7 +675,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* Herizon AI Prompt Starter Card */}
-            {/* <div className="rounded-3xl bg-gradient-to-br from-purple-900 to-indigo-900 text-white p-6 shadow-md">
+            <div className="rounded-3xl bg-gradient-to-br from-purple-900 to-indigo-900 text-white p-6 shadow-md">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 rounded-xl bg-white/20 text-sm">🤖</span>
                 <h3 className="text-sm font-bold">Herizon AI Assistant</h3>
@@ -699,7 +706,67 @@ export default async function DashboardPage() {
               >
                 Open Herizon AI Chat
               </Link>
-            </div> */}
+            </div>
+
+            {/* Active Reminders & In-App Notifications Card */}
+            <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-xs border border-pink-100/60">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🔔</span>
+                  <h3 className="text-base font-bold text-gray-900">
+                    Reminders &amp; Alerts
+                  </h3>
+                </div>
+                <span className="text-[10px] font-semibold text-pink-600 bg-pink-50 px-2.5 py-0.5 rounded-full">
+                  In-App Sync
+                </span>
+              </div>
+
+              {notifications.length > 0 ? (
+                <div className="mt-4 space-y-3">
+                  {notifications.map((notif) => {
+                    const icon =
+                      notif.type === "PERIOD_REMINDER"
+                        ? "🩸"
+                        : notif.type === "HEALTH_TIP"
+                        ? "💡"
+                        : notif.type === "PARTNER_INVITE"
+                        ? "❤️"
+                        : "🔔";
+
+                    const isUnread = notif.status !== "READ";
+
+                    return (
+                      <div
+                        key={notif.id}
+                        className={`p-3.5 rounded-2xl border text-xs transition ${
+                          isUnread
+                            ? "bg-pink-50/50 border-pink-100/80 shadow-xs"
+                            : "bg-gray-50/70 border-gray-100 text-gray-600"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 font-bold text-gray-900">
+                            <span>{icon}</span>
+                            <span>{notif.title}</span>
+                          </div>
+                          <span className="text-[10px] text-gray-400">
+                            {formatDate(notif.createdAt)}
+                          </span>
+                        </div>
+                        <p className="text-gray-600 mt-1.5 text-[11px] leading-relaxed">
+                          {notif.message}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-xs text-gray-500">
+                  <p>All caught up! No active reminders.</p>
+                </div>
+              )}
+            </div>
           </div>
         </section>
 

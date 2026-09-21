@@ -132,7 +132,9 @@ export default async function PartnerDashboardPage() {
 
   const partnerName = connection.inviter.name;
   const latestCycle = inviterUser?.cycles[0];
-  const phaseCare = getPartnerPhaseCare(latestCycle?.phase);
+  const phaseCare = getPartnerPhaseCare(
+    settings.shareCyclePhase ? latestCycle?.phase : null
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50/70">
@@ -253,7 +255,9 @@ export default async function PartnerDashboardPage() {
               <span className="text-xl">💡</span>
               <div>
                 <h3 className="text-base font-bold text-gray-900">
-                  Support Tips for {partnerName}&apos;s {phaseCare.name}
+                  {settings.shareCyclePhase && latestCycle?.phase
+                    ? `Support Tips for ${partnerName}'s ${phaseCare.name}`
+                    : `Everyday Care & Support Tips for ${partnerName}`}
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5">
                   Thoughtful ways you can show care and make their day easier.

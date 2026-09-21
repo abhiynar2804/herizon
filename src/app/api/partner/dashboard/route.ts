@@ -101,8 +101,12 @@ export async function GET() {
     }
 
     if (settings.shareCareSuggestions) {
-      dashboard.careSuggestions =
-        "Be supportive and check in with your partner.";
+      if (settings.shareCyclePhase && user.cycles[0]?.phase) {
+        dashboard.careSuggestions = `Support suggestions tailored for ${user.cycles[0].phase.toLowerCase()} phase.`;
+      } else {
+        dashboard.careSuggestions =
+          "Be supportive and check in with your partner for everyday wellness.";
+      }
     }
 
     if (settings.shareReminders) {

@@ -5,6 +5,15 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 
+interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: "PERIOD_REMINDER" | "HEALTH_TIP" | "PARTNER_INVITE" | "SYSTEM";
+  status: "PENDING" | "SENT" | "READ";
+  createdAt: string;
+}
+
 interface NavbarProps {
   userName?: string | null;
   userEmail?: string | null;
@@ -19,9 +28,62 @@ export default function Navbar({ userName, userEmail }: NavbarProps) {
   const [quickLogOpen, setQuickLogOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [notificationsLoading, setNotificationsLoading] = useState<boolean>(false);
+
   const userMenuRef = useRef<HTMLDivElement>(null);
   const quickLogRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+
+  const fetchNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      const res = await fetch("/api/notifications");
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unreadCount || 0);
+      }
+    } catch (e) {
+      console.error("Failed to load notifications:", e);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchNotifications();
+    }
+  }, [session?.user?.id]);
+
+  const handleMarkAsRead = async (notificationId?: string) => {
+    try {
+      await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          notificationId ? { notificationId } : { markAll: true }
+        ),
+      });
+      if (notificationId) {
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notificationId ? { ...n, status: "READ" } : n
+          )
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      } else {
+        setNotifications((prev) =>
+          prev.map((n) => ({ ...n, status: "READ" }))
+        );
+        setUnreadCount(0);
+      }
+    } catch (e) {
+      console.error("Failed to mark notifications read:", e);
+    }
+  };
 
   const isPartner = session?.user?.role === "PARTNER";
   const displayName = userName || session?.user?.name || (isPartner ? "Partner Account" : "Herizon Member");
@@ -272,43 +334,106 @@ export default function Navbar({ userName, userEmail }: NavbarProps) {
                     d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                   />
                 </svg>
-                <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
-                </span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-pink-500 text-[9px] font-bold text-white shadow-xs animate-pulse">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </button>
 
               {notificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl shadow-pink-950/10 border border-pink-100 p-4 z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl shadow-pink-950/10 border border-pink-100 p-4 z-50 animate-in fade-in slide-in-from-top-2">
                   <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                    <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                      Partner &amp; Health Insights
-                    </h3>
-                    <span className="text-[10px] font-semibold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full">
-                      Active
-                    </span>
-                  </div>
-
-                  <div className="mt-3 space-y-2.5">
-                    <div className="p-2.5 rounded-xl bg-pink-50/50 border border-pink-100/60 text-xs">
-                      <div className="flex items-center justify-between font-semibold text-pink-800">
-                        <span>❤️ Partner Sync Status</span>
-                      </div>
-                      <p className="text-gray-600 mt-1 text-[11px] leading-relaxed">
-                        {isPartner
-                          ? "View and accept incoming invitations on your Partner Dashboard."
-                          : "Manage your partner invite or toggle granular privacy permissions anytime."}
-                      </p>
-                      {isPartner && (
-                        <Link
-                          href="/partner/dashboard"
-                          onClick={() => setNotificationsOpen(false)}
-                          className="inline-block mt-2 px-3 py-1 rounded-lg bg-pink-600 text-white text-[11px] font-semibold hover:bg-pink-700 transition"
-                        >
-                          Open Partner Dashboard
-                        </Link>
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                        Reminders &amp; Alerts
+                      </h3>
+                      {unreadCount > 0 && (
+                        <span className="text-[10px] font-semibold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full">
+                          {unreadCount} New
+                        </span>
                       )}
                     </div>
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handleMarkAsRead()}
+                        className="text-[11px] font-medium text-pink-600 hover:text-pink-800 hover:underline"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mt-3 max-h-80 overflow-y-auto space-y-2.5 pr-1">
+                    {notificationsLoading && notifications.length === 0 ? (
+                      <div className="py-6 text-center text-xs text-gray-400">
+                        Loading notifications...
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="py-6 text-center text-xs text-gray-400">
+                        No reminders or alerts right now.
+                      </div>
+                    ) : (
+                      notifications.slice(0, 6).map((item) => {
+                        const isUnread = item.status !== "READ";
+                        const icon =
+                          item.type === "PERIOD_REMINDER"
+                            ? "🩸"
+                            : item.type === "HEALTH_TIP"
+                            ? "💡"
+                            : item.type === "PARTNER_INVITE"
+                            ? "❤️"
+                            : "🔔";
+
+                        return (
+                          <div
+                            key={item.id}
+                            className={`p-3 rounded-xl border text-xs transition relative ${
+                              isUnread
+                                ? "bg-pink-50/60 border-pink-200/80 shadow-xs"
+                                : "bg-gray-50/50 border-gray-100 text-gray-600"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-1.5 font-semibold text-gray-900">
+                                <span>{icon}</span>
+                                <span>{item.title}</span>
+                              </div>
+                              {isUnread && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleMarkAsRead(item.id)}
+                                  title="Mark as read"
+                                  className="text-[10px] text-pink-600 hover:text-pink-800 font-medium shrink-0"
+                                >
+                                  Read
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-gray-600 mt-1 text-[11px] leading-relaxed">
+                              {item.message}
+                            </p>
+                            <div className="mt-1.5 text-[10px] text-gray-400">
+                              {new Date(item.createdAt).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-gray-100 text-center">
+                    <Link
+                      href={isPartner ? "/partner/dashboard" : "/dashboard"}
+                      onClick={() => setNotificationsOpen(false)}
+                      className="text-[11px] font-semibold text-pink-600 hover:text-pink-800 hover:underline"
+                    >
+                      View on Dashboard →
+                    </Link>
                   </div>
                 </div>
               )}

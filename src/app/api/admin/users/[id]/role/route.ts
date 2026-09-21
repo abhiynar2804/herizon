@@ -8,7 +8,7 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-const validRoles = ["USER", "PARTNER", "ADMIN"] as const;
+const validRoles = ["USER", "PARTNER"] as const;
 
 export async function PATCH(
   request: Request,
@@ -36,12 +36,12 @@ export async function PATCH(
 
     if (
       typeof body.role !== "string" ||
-      !validRoles.includes(body.role)
+      !validRoles.includes(body.role as (typeof validRoles)[number])
     ) {
       return NextResponse.json(
         {
           message:
-            "Invalid role. Allowed roles: USER, PARTNER, ADMIN.",
+            "Invalid role. Role management is restricted to USER and PARTNER.",
         },
         { status: 400 },
       );
@@ -68,6 +68,13 @@ export async function PATCH(
       return NextResponse.json(
         { message: "User not found." },
         { status: 404 },
+      );
+    }
+
+    if (user.role === "ADMIN") {
+      return NextResponse.json(
+        { message: "Admin accounts cannot be modified via role management." },
+        { status: 400 },
       );
     }
 

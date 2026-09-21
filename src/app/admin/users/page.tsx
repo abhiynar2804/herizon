@@ -164,16 +164,23 @@ export default function AdminUsersPage() {
                       </td>
 
                       <td className="py-4 px-4">
-                        <select
-                          value={user.role}
-                          disabled={actionLoading === user.id}
-                          onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                          className="bg-slate-950 border border-slate-700 text-xs text-slate-200 rounded-lg px-2.5 py-1 focus:outline-none focus:border-purple-500"
-                        >
-                          <option value="USER">USER</option>
-                          <option value="PARTNER">PARTNER</option>
-                          <option value="ADMIN">ADMIN</option>
-                        </select>
+                        {user.role === "ADMIN" ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-950/60 text-purple-300 border border-purple-800/60 font-semibold text-[11px]">
+                            <span>🛡️</span> ADMIN
+                          </span>
+                        ) : (
+                          <select
+                            value={user.role}
+                            disabled={actionLoading === user.id}
+                            onChange={(e) =>
+                              handleRoleChange(user.id, e.target.value)
+                            }
+                            className="bg-slate-950 border border-slate-700 text-xs text-slate-200 rounded-lg px-2.5 py-1 focus:outline-none focus:border-purple-500"
+                          >
+                            <option value="USER">USER</option>
+                            <option value="PARTNER">PARTNER</option>
+                          </select>
+                        )}
                       </td>
 
                       <td className="py-4 px-4">
