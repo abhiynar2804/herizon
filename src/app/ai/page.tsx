@@ -27,11 +27,7 @@ export default function AIPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    loadSessions();
-  }, []);
-
-  async function loadSessions() {
+  const loadSessions = async () => {
     try {
       setPageLoading(true);
       setError("");
@@ -55,7 +51,11 @@ export default function AIPage() {
     } finally {
       setPageLoading(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    void loadSessions();
+  }, [loadSessions]);
 
   async function loadSession(sessionId: string) {
     try {

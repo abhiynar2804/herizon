@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -42,7 +42,7 @@ export default function AcceptPartnerInvitePage({
       }, 1500);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to accept invitation."
+        err instanceof Error ? err.message : "Failed to accept invitation.",
       );
     } finally {
       setLoading(false);
@@ -82,11 +82,14 @@ export default function AcceptPartnerInvitePage({
               </p>
             </div>
           ) : status === "loading" ? (
-            <p className="text-xs text-gray-400">Checking your account session...</p>
+            <p className="text-xs text-gray-400">
+              Checking your account session...
+            </p>
           ) : !session ? (
             <div className="space-y-3 pt-2">
               <p className="text-xs text-amber-700 bg-amber-50 p-3 rounded-2xl border border-amber-100">
-                Please sign in with your Partner account to accept this invitation.
+                Please sign in with your Partner account to accept this
+                invitation.
               </p>
               <Link
                 href="/login"
@@ -97,7 +100,9 @@ export default function AcceptPartnerInvitePage({
             </div>
           ) : session.user.role !== "PARTNER" ? (
             <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-800 leading-relaxed">
-              You are currently logged in as a <strong>Primary User</strong>. To accept partner invitations, please log in with a <strong>Partner</strong> role account.
+              You are currently logged in as a <strong>Primary User</strong>. To
+              accept partner invitations, please log in with a{" "}
+              <strong>Partner</strong> role account.
             </div>
           ) : (
             <button

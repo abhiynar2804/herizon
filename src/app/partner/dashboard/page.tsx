@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import PendingInviteCard from "@/components/partner/PendingInviteCard";
 
 // Helper for partner care tips based on cycle phase
 function getPartnerPhaseCare(phase?: string | null) {
@@ -115,8 +114,8 @@ export default async function PartnerDashboardPage() {
   });
 
   if (!connection || !connection.sharingSetting) {
-  redirect("/partner/requests");
-}
+    redirect("/partner/requests");
+  }
 
   const settings = connection.sharingSetting;
 
@@ -153,7 +152,8 @@ export default async function PartnerDashboardPage() {
             </h1>
 
             <p className="text-white/90 text-xs sm:text-sm max-w-xl leading-relaxed">
-              Welcome to your shared partner dashboard. Below is the supportive information {partnerName} has chosen to share with you.
+              Welcome to your shared partner dashboard. Below is the supportive
+              information {partnerName} has chosen to share with you.
             </p>
           </div>
         </section>
@@ -168,7 +168,9 @@ export default async function PartnerDashboardPage() {
               Herizon Privacy Lock Active
             </span>
             <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
-              Medical records, AI chat history, private notes, and sensitive health logs are strictly confidential to {partnerName} and are never displayed here.
+              Medical records, AI chat history, private notes, and sensitive
+              health logs are strictly confidential to {partnerName} and are
+              never displayed here.
             </p>
           </div>
         </div>
@@ -210,7 +212,8 @@ export default async function PartnerDashboardPage() {
                 {formatDate(latestCycle?.predictedNextPeriod)}
               </p>
               <p className="text-xs text-gray-500">
-                Keep this timeframe in mind so you can offer extra care &amp; understanding.
+                Keep this timeframe in mind so you can offer extra care &amp;
+                understanding.
               </p>
             </div>
           ) : (
@@ -232,7 +235,8 @@ export default async function PartnerDashboardPage() {
                 {latestCycle?.mood || "No specific mood shared today"}
               </p>
               <p className="text-xs text-gray-500">
-                Updated directly from {partnerName}&apos;s period tracker check-in.
+                Updated directly from {partnerName}&apos;s period tracker
+                check-in.
               </p>
             </div>
           ) : (
@@ -263,7 +267,9 @@ export default async function PartnerDashboardPage() {
                   key={index}
                   className="p-4 rounded-2xl bg-white border border-pink-100/80 shadow-xs text-xs text-gray-700 space-y-1"
                 >
-                  <span className="text-pink-600 font-bold">Tip #{index + 1}</span>
+                  <span className="text-pink-600 font-bold">
+                    Tip #{index + 1}
+                  </span>
                   <p className="leading-relaxed font-medium">{action}</p>
                 </div>
               ))}

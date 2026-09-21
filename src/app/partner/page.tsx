@@ -43,7 +43,6 @@ export default function PartnerManagementPage() {
 
   // Invite input
   const [inviteEmail, setInviteEmail] = useState("");
-  const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
     fetchConnection();
@@ -67,7 +66,7 @@ export default function PartnerManagementPage() {
       setSharing(data.sharingSetting);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load connection data."
+        err instanceof Error ? err.message : "Failed to load connection data.",
       );
     } finally {
       setLoading(false);
@@ -104,14 +103,16 @@ export default function PartnerManagementPage() {
       await fetchConnection();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to send invitation."
+        err instanceof Error ? err.message : "Failed to send invitation.",
       );
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function handleToggleSharing(key: keyof Omit<SharingSetting, "id" | "connectionId">) {
+  async function handleToggleSharing(
+    key: keyof Omit<SharingSetting, "id" | "connectionId">,
+  ) {
     if (!sharing) return;
 
     const updated = {
@@ -151,7 +152,7 @@ export default function PartnerManagementPage() {
   async function handleDisconnect() {
     if (
       !confirm(
-        "Are you sure you want to disconnect your partner? They will immediately lose access to all shared cycle updates."
+        "Are you sure you want to disconnect your partner? They will immediately lose access to all shared cycle updates.",
       )
     ) {
       return;
@@ -175,7 +176,7 @@ export default function PartnerManagementPage() {
       await fetchConnection();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to disconnect partner."
+        err instanceof Error ? err.message : "Failed to disconnect partner.",
       );
     } finally {
       setSubmitting(false);
@@ -195,7 +196,8 @@ export default function PartnerManagementPage() {
             Partner Access Hub
           </h1>
           <p className="text-gray-500 text-sm">
-            Invite one trusted partner to receive updates on your cycle phase and care tips with total privacy control.
+            Invite one trusted partner to receive updates on your cycle phase
+            and care tips with total privacy control.
           </p>
         </header>
 
@@ -233,7 +235,9 @@ export default function PartnerManagementPage() {
                       ● Connected &amp; Active
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">{partner.email}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {partner.email}
+                  </p>
                 </div>
               </div>
 
@@ -254,7 +258,8 @@ export default function PartnerManagementPage() {
                   Granular Sharing &amp; Privacy Settings
                 </h3>
                 <p className="text-xs text-gray-500 mt-1">
-                  Choose exactly what information {partner.name} can view on their Partner Dashboard.
+                  Choose exactly what information {partner.name} can view on
+                  their Partner Dashboard.
                 </p>
               </div>
 
@@ -266,7 +271,8 @@ export default function PartnerManagementPage() {
                       🌸 Share Cycle Phase
                     </span>
                     <span className="text-xs text-gray-500">
-                      Allows partner to see your current phase (Menstrual, Follicular, Ovulation, Luteal).
+                      Allows partner to see your current phase (Menstrual,
+                      Follicular, Ovulation, Luteal).
                     </span>
                   </div>
                   <button
@@ -278,7 +284,9 @@ export default function PartnerManagementPage() {
                   >
                     <span
                       className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                        sharing.shareCyclePhase ? "translate-x-5" : "translate-x-0"
+                        sharing.shareCyclePhase
+                          ? "translate-x-5"
+                          : "translate-x-0"
                       }`}
                     />
                   </button>
@@ -291,7 +299,8 @@ export default function PartnerManagementPage() {
                       📅 Share Next Predicted Period Date
                     </span>
                     <span className="text-xs text-gray-500">
-                      Allows partner to view countdown for your upcoming period so they can support you.
+                      Allows partner to view countdown for your upcoming period
+                      so they can support you.
                     </span>
                   </div>
                   <button
@@ -303,7 +312,9 @@ export default function PartnerManagementPage() {
                   >
                     <span
                       className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                        sharing.shareNextPeriod ? "translate-x-5" : "translate-x-0"
+                        sharing.shareNextPeriod
+                          ? "translate-x-5"
+                          : "translate-x-0"
                       }`}
                     />
                   </button>
@@ -316,7 +327,8 @@ export default function PartnerManagementPage() {
                       😊 Share Logged Mood &amp; Sensations
                     </span>
                     <span className="text-xs text-gray-500">
-                      Shows daily feelings or sensations logged in your period tracker.
+                      Shows daily feelings or sensations logged in your period
+                      tracker.
                     </span>
                   </div>
                   <button
@@ -341,19 +353,24 @@ export default function PartnerManagementPage() {
                       💡 Share Care &amp; Support Suggestions
                     </span>
                     <span className="text-xs text-gray-500">
-                      Provides partner with practical supportive actions (e.g. heating pads, herbal teas, quiet rest).
+                      Provides partner with practical supportive actions (e.g.
+                      heating pads, herbal teas, quiet rest).
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleToggleSharing("shareCareSuggestions")}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      sharing.shareCareSuggestions ? "bg-pink-600" : "bg-gray-200"
+                      sharing.shareCareSuggestions
+                        ? "bg-pink-600"
+                        : "bg-gray-200"
                     }`}
                   >
                     <span
                       className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                        sharing.shareCareSuggestions ? "translate-x-5" : "translate-x-0"
+                        sharing.shareCareSuggestions
+                          ? "translate-x-5"
+                          : "translate-x-0"
                       }`}
                     />
                   </button>
@@ -378,7 +395,9 @@ export default function PartnerManagementPage() {
                   >
                     <span
                       className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                        sharing.shareReminders ? "translate-x-5" : "translate-x-0"
+                        sharing.shareReminders
+                          ? "translate-x-5"
+                          : "translate-x-0"
                       }`}
                     />
                   </button>
@@ -399,7 +418,11 @@ export default function PartnerManagementPage() {
                     Partner Invitation Pending
                   </h2>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Invitation sent to <span className="font-semibold text-gray-800">{partner.email}</span>.
+                    Invitation sent to{" "}
+                    <span className="font-semibold text-gray-800">
+                      {partner.email}
+                    </span>
+                    .
                   </p>
                 </div>
               </div>
@@ -407,7 +430,8 @@ export default function PartnerManagementPage() {
               <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-100 text-xs text-amber-900 space-y-2">
                 <p className="font-semibold">What happens next?</p>
                 <p className="leading-relaxed">
-                  Your partner needs to sign into Herizon with their partner account and accept the invitation to complete the sync.
+                  Your partner needs to sign into Herizon with their partner
+                  account and accept the invitation to complete the sync.
                 </p>
               </div>
 
@@ -431,7 +455,8 @@ export default function PartnerManagementPage() {
                 Connect Your Partner
               </h2>
               <p className="text-xs text-gray-500 mt-1 leading-relaxed max-w-lg">
-                Invite your partner to receive an exclusive, privacy-focused dashboard. You remain in 100% control of what data is shared.
+                Invite your partner to receive an exclusive, privacy-focused
+                dashboard. You remain in 100% control of what data is shared.
               </p>
             </div>
 
@@ -453,7 +478,8 @@ export default function PartnerManagementPage() {
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 text-sm text-pink-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition"
                 />
                 <p className="text-[11px] text-gray-400 mt-1">
-                  Note: Partner must be registered on Herizon with a Partner role account.
+                  Note: Partner must be registered on Herizon with a Partner
+                  role account.
                 </p>
               </div>
 
@@ -462,22 +488,30 @@ export default function PartnerManagementPage() {
                 disabled={submitting || !inviteEmail.trim()}
                 className="w-full py-3 px-5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white font-semibold text-sm shadow-xs disabled:opacity-50 transition active:scale-[0.99]"
               >
-                {submitting ? "Sending Invitation..." : "Send Partner Invitation"}
+                {submitting
+                  ? "Sending Invitation..."
+                  : "Send Partner Invitation"}
               </button>
             </form>
 
             <div className="pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-gray-600">
               <div className="p-3.5 rounded-2xl bg-pink-50/50 border border-pink-100/60">
-                <span className="font-bold text-pink-900 block mb-0.5">🔒 What stays private?</span>
+                <span className="font-bold text-pink-900 block mb-0.5">
+                  🔒 What stays private?
+                </span>
                 <p className="text-gray-500 leading-relaxed text-[11px]">
-                  Your health profile, detailed symptoms, private notes, and AI conversations are NEVER shared.
+                  Your health profile, detailed symptoms, private notes, and AI
+                  conversations are NEVER shared.
                 </p>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-purple-50/50 border border-purple-100/60">
-                <span className="font-bold text-purple-900 block mb-0.5">❤️ What can be shared?</span>
+                <span className="font-bold text-purple-900 block mb-0.5">
+                  ❤️ What can be shared?
+                </span>
                 <p className="text-gray-500 leading-relaxed text-[11px]">
-                  Only cycle phase, predicted period timeframe, mood, and supportive care suggestions.
+                  Only cycle phase, predicted period timeframe, mood, and
+                  supportive care suggestions.
                 </p>
               </div>
             </div>

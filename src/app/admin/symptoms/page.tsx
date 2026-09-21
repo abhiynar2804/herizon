@@ -3,11 +3,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import AdminNavbar from "@/components/layout/AdminNavbar";
 
+type SymptomSeverityLevel = "LOW" | "MODERATE" | "HIGH" | "CRITICAL";
+type RulePriorityLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+
 type Symptom = {
   id: string;
   name: string;
   description: string | null;
-  severity: "LOW" | "MODERATE" | "HIGH" | "CRITICAL";
+  severity: SymptomSeverityLevel;
   isActive: boolean;
 };
 
@@ -29,20 +32,20 @@ type SymptomRule = {
 export default function AdminSymptomsPage() {
   const [symptoms, setSymptoms] = useState<Symptom[]>([]);
   const [rules, setRules] = useState<SymptomRule[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   // Symptom Form State
   const [symptomName, setSymptomName] = useState("");
   const [symptomDesc, setSymptomDesc] = useState("");
-  const [symptomSeverity, setSymptomSeverity] = useState<"LOW" | "MODERATE" | "HIGH" | "CRITICAL">("LOW");
+  const [symptomSeverity, setSymptomSeverity] =
+    useState<SymptomSeverityLevel>("LOW");
   const [addingSymptom, setAddingSymptom] = useState(false);
 
   // Rule Form State
   const [ruleTitle, setRuleTitle] = useState("");
   const [ruleRec, setRuleRec] = useState("");
-  const [rulePriority, setRulePriority] = useState<"LOW" | "MEDIUM" | "HIGH" | "CRITICAL">("MEDIUM");
+  const [rulePriority, setRulePriority] = useState<RulePriorityLevel>("MEDIUM");
   const [ruleEmergency, setRuleEmergency] = useState(false);
   const [selectedSymptomIds, setSelectedSymptomIds] = useState<string[]>([]);
   const [addingRule, setAddingRule] = useState(false);
@@ -53,7 +56,6 @@ export default function AdminSymptomsPage() {
 
   async function loadAllData() {
     try {
-      setLoading(true);
       setError("");
 
       const [symRes, ruleRes] = await Promise.all([
@@ -64,15 +66,19 @@ export default function AdminSymptomsPage() {
       const symData = await symRes.json();
       const ruleData = await ruleRes.json();
 
-      if (!symRes.ok) throw new Error(symData.message || "Failed to load symptoms.");
-      if (!ruleRes.ok) throw new Error(ruleData.message || "Failed to load rules.");
+      if (!symRes.ok)
+        throw new Error(symData.message || "Failed to load symptoms.");
+      if (!ruleRes.ok)
+        throw new Error(ruleData.message || "Failed to load rules.");
 
       setSymptoms(symData.symptoms || []);
       setRules(ruleData.rules || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error loading symptom engine data.");
-    } finally {
-      setLoading(false);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Error loading symptom engine data.",
+      );
     }
   }
 
@@ -96,7 +102,8 @@ export default function AdminSymptomsPage() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to create symptom.");
+      if (!response.ok)
+        throw new Error(data.message || "Failed to create symptom.");
 
       setSuccess("Symptom added successfully!");
       setSymptomName("");
@@ -119,7 +126,8 @@ export default function AdminSymptomsPage() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to delete symptom.");
+      if (!response.ok)
+        throw new Error(data.message || "Failed to delete symptom.");
 
       setSuccess("Symptom deleted successfully.");
       await loadAllData();
@@ -130,8 +138,14 @@ export default function AdminSymptomsPage() {
 
   async function handleAddRule(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!ruleTitle.trim() || !ruleRec.trim() || selectedSymptomIds.length === 0) {
-      setError("Please provide rule title, recommendation, and select at least one symptom condition.");
+    if (
+      !ruleTitle.trim() ||
+      !ruleRec.trim() ||
+      selectedSymptomIds.length === 0
+    ) {
+      setError(
+        "Please provide rule title, recommendation, and select at least one symptom condition.",
+      );
       return;
     }
 
@@ -153,7 +167,8 @@ export default function AdminSymptomsPage() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to create rule.");
+      if (!response.ok)
+        throw new Error(data.message || "Failed to create rule.");
 
       setSuccess("Symptom Rule created successfully!");
       setRuleTitle("");
@@ -162,7 +177,9 @@ export default function AdminSymptomsPage() {
       setSelectedSymptomIds([]);
       await loadAllData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error creating symptom rule.");
+      setError(
+        err instanceof Error ? err.message : "Error creating symptom rule.",
+      );
     } finally {
       setAddingRule(false);
     }
@@ -178,7 +195,8 @@ export default function AdminSymptomsPage() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to delete rule.");
+      if (!response.ok)
+        throw new Error(data.message || "Failed to delete rule.");
 
       setSuccess("Rule deleted successfully.");
       await loadAllData();
@@ -189,7 +207,9 @@ export default function AdminSymptomsPage() {
 
   function toggleSymptomSelection(id: string) {
     setSelectedSymptomIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
     );
   }
 
@@ -230,7 +250,9 @@ export default function AdminSymptomsPage() {
 
               <form onSubmit={handleAddSymptom} className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Symptom Name *</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Symptom Name *
+                  </label>
                   <input
                     type="text"
                     required
@@ -242,10 +264,14 @@ export default function AdminSymptomsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Severity Level</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Severity Level
+                  </label>
                   <select
                     value={symptomSeverity}
-                    onChange={(e) => setSymptomSeverity(e.target.value as any)}
+                    onChange={(e) =>
+                      setSymptomSeverity(e.target.value as SymptomSeverityLevel)
+                    }
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-pink-500"
                   >
                     <option value="LOW">LOW</option>
@@ -256,7 +282,9 @@ export default function AdminSymptomsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Description</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Description
+                  </label>
                   <textarea
                     rows={2}
                     value={symptomDesc}
@@ -290,7 +318,9 @@ export default function AdminSymptomsPage() {
                   >
                     <div>
                       <div className="font-bold text-white">{s.name}</div>
-                      <span className="text-[10px] text-pink-400 font-medium">{s.severity} Severity</span>
+                      <span className="text-[10px] text-pink-400 font-medium">
+                        {s.severity} Severity
+                      </span>
                     </div>
 
                     <button
@@ -316,7 +346,9 @@ export default function AdminSymptomsPage() {
 
               <form onSubmit={handleAddRule} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Rule Title *</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Rule Title *
+                  </label>
                   <input
                     type="text"
                     required
@@ -329,10 +361,14 @@ export default function AdminSymptomsPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1">Priority Level</label>
+                    <label className="block text-slate-300 font-semibold mb-1">
+                      Priority Level
+                    </label>
                     <select
                       value={rulePriority}
-                      onChange={(e) => setRulePriority(e.target.value as any)}
+                      onChange={(e) =>
+                        setRulePriority(e.target.value as RulePriorityLevel)
+                      }
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-purple-500"
                     >
                       <option value="LOW">LOW</option>
@@ -350,7 +386,9 @@ export default function AdminSymptomsPage() {
                         onChange={(e) => setRuleEmergency(e.target.checked)}
                         className="rounded border-slate-700 bg-slate-950 text-red-500 h-4 w-4"
                       />
-                      <span className="text-xs text-red-400 font-semibold">Emergency Flag</span>
+                      <span className="text-xs text-red-400 font-semibold">
+                        Emergency Flag
+                      </span>
                     </label>
                   </div>
                 </div>
@@ -381,7 +419,9 @@ export default function AdminSymptomsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Recommendation / Triage Instructions *</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Recommendation / Triage Instructions *
+                  </label>
                   <textarea
                     rows={3}
                     required

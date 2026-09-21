@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AdminNavbar from "@/components/layout/AdminNavbar";
 
 type AuditLog = {
@@ -23,11 +23,7 @@ export default function AdminAuditLogsPage() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    fetchLogs();
-  }, []);
-
-  async function fetchLogs() {
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -42,19 +38,23 @@ export default function AdminAuditLogsPage() {
       setLogs(data.logs || []);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load audit logs."
+        err instanceof Error ? err.message : "Failed to load audit logs.",
       );
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    void fetchLogs();
+  }, [fetchLogs]);
 
   const filteredLogs = logs.filter(
     (log) =>
       log.action.toLowerCase().includes(search.toLowerCase()) ||
       log.actor.name.toLowerCase().includes(search.toLowerCase()) ||
       log.actor.email.toLowerCase().includes(search.toLowerCase()) ||
-      (log.details && log.details.toLowerCase().includes(search.toLowerCase()))
+      (log.details && log.details.toLowerCase().includes(search.toLowerCase())),
   );
 
   return (
@@ -68,7 +68,8 @@ export default function AdminAuditLogsPage() {
               Platform Audit Activity Logs
             </h1>
             <p className="text-xs text-slate-400 mt-1">
-              Chronological security audit log of administrative actions and platform state updates.
+              Chronological security audit log of administrative actions and
+              platform state updates.
             </p>
           </div>
 
@@ -113,7 +114,10 @@ export default function AdminAuditLogsPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
                   {filteredLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-slate-800/40 transition">
+                    <tr
+                      key={log.id}
+                      className="hover:bg-slate-800/40 transition"
+                    >
                       <td className="py-3.5 px-6 text-slate-400 font-sans">
                         {new Date(log.createdAt).toLocaleString()}
                       </td>
@@ -129,8 +133,12 @@ export default function AdminAuditLogsPage() {
                       </td>
 
                       <td className="py-3.5 px-6 font-sans">
-                        <div className="font-semibold text-white">{log.actor.name}</div>
-                        <div className="text-[10px] text-slate-400">{log.actor.email}</div>
+                        <div className="font-semibold text-white">
+                          {log.actor.name}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {log.actor.email}
+                        </div>
                       </td>
 
                       <td className="py-3.5 px-6 font-sans text-slate-300">

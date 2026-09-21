@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import AdminNavbar from "@/components/layout/AdminNavbar";
 
 type Category = {
@@ -9,13 +9,15 @@ type Category = {
   description: string | null;
 };
 
+type ArticleStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+
 type Article = {
   id: string;
   title: string;
   slug: string;
   summary: string | null;
   content: string;
-  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  status: ArticleStatus;
   publishedAt: string | null;
   category: Category;
 };
@@ -23,7 +25,6 @@ type Article = {
 export default function AdminArticlesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -38,16 +39,11 @@ export default function AdminArticlesPage() {
   const [artCatId, setArtCatId] = useState("");
   const [artSummary, setArtSummary] = useState("");
   const [artContent, setArtContent] = useState("");
-  const [artStatus, setArtStatus] = useState<"DRAFT" | "PUBLISHED" | "ARCHIVED">("PUBLISHED");
+  const [artStatus, setArtStatus] = useState<ArticleStatus>("PUBLISHED");
   const [addingArt, setAddingArt] = useState(false);
 
-  useEffect(() => {
-    loadAllData();
-  }, []);
-
-  async function loadAllData() {
+  const loadAllData = useCallback(async () => {
     try {
-      setLoading(true);
       setError("");
 
       const [catRes, artRes] = await Promise.all([
@@ -58,8 +54,10 @@ export default function AdminArticlesPage() {
       const catData = await catRes.json();
       const artData = await artRes.json();
 
-      if (!catRes.ok) throw new Error(catData.message || "Failed to load categories.");
-      if (!artRes.ok) throw new Error(artData.message || "Failed to load articles.");
+      if (!catRes.ok)
+        throw new Error(catData.message || "Failed to load categories.");
+      if (!artRes.ok)
+        throw new Error(artData.message || "Failed to load articles.");
 
       const catList = catData.categories || catData || [];
       setCategories(catList);
@@ -69,11 +67,15 @@ export default function AdminArticlesPage() {
 
       setArticles(artData.articles || artData || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error loading educational data.");
-    } finally {
-      setLoading(false);
+      setError(
+        err instanceof Error ? err.message : "Error loading educational data.",
+      );
     }
-  }
+  }, [artCatId]);
+
+  useEffect(() => {
+    void loadAllData();
+  }, [loadAllData]);
 
   async function handleAddCategory(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -94,7 +96,8 @@ export default function AdminArticlesPage() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to create category.");
+      if (!response.ok)
+        throw new Error(data.message || "Failed to create category.");
 
       setSuccess("Category added successfully!");
       setCatName("");
@@ -114,7 +117,12 @@ export default function AdminArticlesPage() {
       return;
     }
 
-    const autoSlug = artSlug.trim() || artTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const autoSlug =
+      artSlug.trim() ||
+      artTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
 
     try {
       setAddingArt(true);
@@ -135,7 +143,8 @@ export default function AdminArticlesPage() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to save article.");
+      if (!response.ok)
+        throw new Error(data.message || "Failed to save article.");
 
       setSuccess("Educational Article saved successfully!");
       setArtTitle("");
@@ -160,7 +169,8 @@ export default function AdminArticlesPage() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to delete article.");
+      if (!response.ok)
+        throw new Error(data.message || "Failed to delete article.");
 
       setSuccess("Article deleted successfully.");
       await loadAllData();
@@ -205,7 +215,9 @@ export default function AdminArticlesPage() {
 
               <form onSubmit={handleAddCategory} className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Category Name *</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Category Name *
+                  </label>
                   <input
                     type="text"
                     required
@@ -217,7 +229,9 @@ export default function AdminArticlesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Description</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Description
+                  </label>
                   <input
                     type="text"
                     value={catDesc}
@@ -244,9 +258,16 @@ export default function AdminArticlesPage() {
 
               <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                 {categories.map((c) => (
-                  <div key={c.id} className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs">
+                  <div
+                    key={c.id}
+                    className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs"
+                  >
                     <span className="font-bold text-white block">{c.name}</span>
-                    {c.description && <span className="text-[11px] text-slate-400">{c.description}</span>}
+                    {c.description && (
+                      <span className="text-[11px] text-slate-400">
+                        {c.description}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -263,7 +284,9 @@ export default function AdminArticlesPage() {
               <form onSubmit={handleAddArticle} className="space-y-4 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1">Article Title *</label>
+                    <label className="block text-slate-300 font-semibold mb-1">
+                      Article Title *
+                    </label>
                     <input
                       type="text"
                       required
@@ -275,7 +298,9 @@ export default function AdminArticlesPage() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1">Category *</label>
+                    <label className="block text-slate-300 font-semibold mb-1">
+                      Category *
+                    </label>
                     <select
                       value={artCatId}
                       onChange={(e) => setArtCatId(e.target.value)}
@@ -292,7 +317,9 @@ export default function AdminArticlesPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1">URL Slug (Auto-generated if blank)</label>
+                    <label className="block text-slate-300 font-semibold mb-1">
+                      URL Slug (Auto-generated if blank)
+                    </label>
                     <input
                       type="text"
                       value={artSlug}
@@ -303,10 +330,14 @@ export default function AdminArticlesPage() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1">Status</label>
+                    <label className="block text-slate-300 font-semibold mb-1">
+                      Status
+                    </label>
                     <select
                       value={artStatus}
-                      onChange={(e) => setArtStatus(e.target.value as any)}
+                      onChange={(e) =>
+                        setArtStatus(e.target.value as ArticleStatus)
+                      }
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-purple-500"
                     >
                       <option value="DRAFT">DRAFT</option>
@@ -317,7 +348,9 @@ export default function AdminArticlesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Summary / Excerpt</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Summary / Excerpt
+                  </label>
                   <input
                     type="text"
                     value={artSummary}
@@ -328,7 +361,9 @@ export default function AdminArticlesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Article Body Content *</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Article Body Content *
+                  </label>
                   <textarea
                     rows={6}
                     required
@@ -357,10 +392,15 @@ export default function AdminArticlesPage() {
 
               <div className="space-y-3">
                 {articles.map((art) => (
-                  <div key={art.id} className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs space-y-2">
+                  <div
+                    key={art.id}
+                    className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs space-y-2"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-white">{art.title}</span>
+                        <span className="font-bold text-white">
+                          {art.title}
+                        </span>
                         <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px]">
                           {art.category.name}
                         </span>
@@ -386,7 +426,11 @@ export default function AdminArticlesPage() {
                       </div>
                     </div>
 
-                    {art.summary && <p className="text-slate-400 text-[11px] leading-relaxed">{art.summary}</p>}
+                    {art.summary && (
+                      <p className="text-slate-400 text-[11px] leading-relaxed">
+                        {art.summary}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>

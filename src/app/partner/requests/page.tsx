@@ -25,11 +25,7 @@ export default function PartnerRequestsPage() {
   const [processingToken, setProcessingToken] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    loadRequests();
-  }, []);
-
-  async function loadRequests() {
+  const loadRequests = async () => {
     try {
       setLoading(true);
       setError("");
@@ -47,42 +43,37 @@ export default function PartnerRequestsPage() {
       setRequests(data.requests || []);
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to load partner requests."
+        err instanceof Error ? err.message : "Failed to load partner requests.",
       );
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    void loadRequests();
+  }, [loadRequests]);
 
   async function handleAccept(token: string) {
     try {
       setProcessingToken(token);
       setError("");
 
-      const response = await fetch(
-        `/api/partner/invite/${token}/accept`,
-        {
-          method: "POST",
-        }
-      );
+      const response = await fetch(`/api/partner/invite/${token}/accept`, {
+        method: "POST",
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Failed to accept invitation."
-        );
+        throw new Error(data.message || "Failed to accept invitation.");
       }
 
       router.push("/partner/dashboard");
       router.refresh();
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to accept invitation."
+        err instanceof Error ? err.message : "Failed to accept invitation.",
       );
       setProcessingToken("");
     }
@@ -97,29 +88,22 @@ export default function PartnerRequestsPage() {
       setProcessingToken(token);
       setError("");
 
-      const response = await fetch(
-        `/api/partner/invite/${token}/decline`,
-        {
-          method: "POST",
-        }
-      );
+      const response = await fetch(`/api/partner/invite/${token}/decline`, {
+        method: "POST",
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Failed to decline invitation."
-        );
+        throw new Error(data.message || "Failed to decline invitation.");
       }
 
       setRequests((current) =>
-        current.filter((request) => request.inviteToken !== token)
+        current.filter((request) => request.inviteToken !== token),
       );
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to decline invitation."
+        err instanceof Error ? err.message : "Failed to decline invitation.",
       );
     } finally {
       setProcessingToken("");
@@ -142,8 +126,8 @@ export default function PartnerRequestsPage() {
             </h1>
 
             <p className="text-sm text-gray-500 mt-1">
-              Review invitations from people who want to connect with you
-              on Herizon.
+              Review invitations from people who want to connect with you on
+              Herizon.
             </p>
           </header>
 
@@ -166,15 +150,14 @@ export default function PartnerRequestsPage() {
               </h2>
 
               <p className="text-sm text-gray-500 mt-1">
-                When someone invites you to connect as their partner,
-                the invitation will appear here.
+                When someone invites you to connect as their partner, the
+                invitation will appear here.
               </p>
             </div>
           ) : (
             <div className="space-y-4">
               {requests.map((request) => {
-                const processing =
-                  processingToken === request.inviteToken;
+                const processing = processingToken === request.inviteToken;
 
                 return (
                   <section
@@ -184,8 +167,7 @@ export default function PartnerRequestsPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white font-bold text-lg flex items-center justify-center">
-                          {request.inviter.name?.[0]?.toUpperCase() ||
-                            "P"}
+                          {request.inviter.name?.[0]?.toUpperCase() || "P"}
                         </div>
 
                         <div>
@@ -199,13 +181,14 @@ export default function PartnerRequestsPage() {
 
                           <p className="text-[11px] text-gray-400 mt-1">
                             Sent{" "}
-                            {new Date(
-                              request.invitedAt
-                            ).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
+                            {new Date(request.invitedAt).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              },
+                            )}
                           </p>
                         </div>
                       </div>
@@ -214,9 +197,7 @@ export default function PartnerRequestsPage() {
                         <button
                           type="button"
                           disabled={processing}
-                          onClick={() =>
-                            handleDecline(request.inviteToken)
-                          }
+                          onClick={() => handleDecline(request.inviteToken)}
                           className="px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold transition disabled:opacity-50"
                         >
                           Decline
@@ -225,9 +206,7 @@ export default function PartnerRequestsPage() {
                         <button
                           type="button"
                           disabled={processing}
-                          onClick={() =>
-                            handleAccept(request.inviteToken)
-                          }
+                          onClick={() => handleAccept(request.inviteToken)}
                           className="px-4 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold transition disabled:opacity-50"
                         >
                           {processing ? "Processing..." : "Accept"}
