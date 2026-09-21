@@ -38,6 +38,13 @@ export async function POST(request: Request) {
 
     const { startDate, endDate, mood, notes, isPrivate } = validation.data;
 
+    if (endDate && endDate < startDate) {
+      return NextResponse.json(
+        { message: "Period end date cannot be before start date." },
+        { status: 400 },
+      );
+    }
+
     const existingCycle = await prisma.cycle.findFirst({
       where: {
         userId: session.user.id,
@@ -51,6 +58,25 @@ export async function POST(request: Request) {
           message: "A cycle with this start date already exists.",
         },
         { status: 409 },
+      );
+    }
+
+    // Check if start date falls inside another cycle's active bleeding days
+    const enclosingCycle = await prisma.cycle.findFirst({
+      where: {
+        userId: session.user.id,
+        startDate: { lte: startDate },
+        endDate: { gte: startDate },
+      },
+    });
+
+    if (enclosingCycle) {
+      return NextResponse.json(
+        {
+          message:
+            "The selected start date falls within an existing recorded period.",
+        },
+        { status: 400 },
       );
     }
 
@@ -69,12 +95,62 @@ export async function POST(request: Request) {
     let cycleLength: number | null = null;
 
     if (previousCycle) {
+      if (previousCycle.endDate && startDate <= previousCycle.endDate) {
+        return NextResponse.json(
+          {
+            message:
+              "Period start date overlaps with your previous cycle's active bleeding days.",
+          },
+          { status: 400 },
+        );
+      }
+
       cycleLength = calculateCycleLength(previousCycle.startDate, startDate);
 
       if (cycleLength < 15 || cycleLength > 90) {
         return NextResponse.json(
           {
             message: "Calculated cycle length must be between 15 and 90 days.",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Check next subsequent cycle
+    const nextCycle = await prisma.cycle.findFirst({
+      where: {
+        userId: session.user.id,
+        startDate: {
+          gt: startDate,
+        },
+      },
+      orderBy: {
+        startDate: "asc",
+      },
+    });
+
+    if (nextCycle) {
+      if (endDate && endDate >= nextCycle.startDate) {
+        return NextResponse.json(
+          {
+            message:
+              "Period end date cannot overlap with or extend past your subsequent cycle start date.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const nextCycleLength = calculateCycleLength(
+        startDate,
+        nextCycle.startDate,
+      );
+
+      if (nextCycleLength < 15) {
+        return NextResponse.json(
+          {
+            message:
+              "Cycle start date is too close (less than 15 days) to your subsequent cycle.",
           },
           { status: 400 },
         );
@@ -167,7 +243,7 @@ export async function GET() {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const cycles = await prisma.cycle.findMany({
+    let cycles = await prisma.cycle.findMany({
       where: {
         userId: session.user.id,
       },
@@ -175,6 +251,54 @@ export async function GET() {
         startDate: "desc",
       },
     });
+
+    if (cycles.length === 0) {
+      const healthProfile = await prisma.healthProfile.findUnique({
+        where: { userId: session.user.id },
+      });
+
+      if (healthProfile?.lastPeriodDate) {
+        const startDate = new Date(healthProfile.lastPeriodDate);
+        const averageCycleLength = healthProfile.averageCycleLength ?? 28;
+        const averagePeriodLength = healthProfile.averagePeriodLength ?? 5;
+
+        const predictedNextPeriod = calculateNextPeriod(
+          startDate,
+          averageCycleLength
+        );
+        const predictedOvulation =
+          calculateOvulationDate(predictedNextPeriod);
+        const { fertileStart, fertileEnd } =
+          calculateFertileWindow(predictedOvulation);
+        const phase = calculateCyclePhase(
+          startDate,
+          averagePeriodLength,
+          predictedOvulation
+        );
+
+        const endDate = new Date(
+          startDate.getTime() +
+            (averagePeriodLength - 1) * 24 * 60 * 60 * 1000
+        );
+
+        const initialCycle = await prisma.cycle.create({
+          data: {
+            userId: session.user.id,
+            startDate,
+            endDate,
+            periodLength: averagePeriodLength,
+            predictedNextPeriod,
+            predictedOvulation,
+            fertileStart,
+            fertileEnd,
+            phase,
+            notes: "Initial cycle recorded from health profile setup.",
+          },
+        });
+
+        cycles = [initialCycle];
+      }
+    }
 
     return NextResponse.json(
       {
