@@ -65,6 +65,30 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
+    if (endDate) {
+      const nextCycle = await prisma.cycle.findFirst({
+        where: {
+          userId: session.user.id,
+          startDate: {
+            gt: existingCycle.startDate,
+          },
+        },
+        orderBy: {
+          startDate: "asc",
+        },
+      });
+
+      if (nextCycle && endDate >= nextCycle.startDate) {
+        return NextResponse.json(
+          {
+            message:
+              "Period end date cannot overlap with or extend past your subsequent cycle start date.",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     let periodLength = existingCycle.periodLength;
 
     if (endDate) {

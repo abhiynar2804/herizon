@@ -5,6 +5,12 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import {
+  calculateNextPeriod,
+  calculateOvulationDate,
+  calculateFertileWindow,
+  calculateCyclePhase,
+} from "@/lib/period/calculations";
 
 // Helper for Phase Information & Hormone Guidance
 function getPhaseDetails(phase: string | null | undefined) {
@@ -92,9 +98,9 @@ function getPhaseDetails(phase: string | null | undefined) {
   }
 }
 
-// Calculate cycle day & progress
+// Calculate cycle day & progress accurately without timezone drift
 function calculateCycleProgress(
-  startDate: Date | null | undefined,
+  startDate: Date | string | null | undefined,
   averageLength: number = 28,
 ) {
   if (!startDate)
@@ -103,35 +109,55 @@ function calculateCycleProgress(
       total: averageLength,
       progressPct: 0,
       daysLeft: averageLength,
+      isDelayed: false,
+      delayedDays: 0,
     };
 
   const start = new Date(startDate);
+  // Normalize both dates to UTC calendar day boundary
+  const startUTC = Date.UTC(
+    start.getUTCFullYear(),
+    start.getUTCMonth(),
+    start.getUTCDate(),
+  );
   const now = new Date();
-  const diffTime = Math.abs(now.getTime() - start.getTime());
+  const nowUTC = Date.UTC(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+
+  const diffTime = nowUTC - startUTC;
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-  const currentCycleDay =
-    diffDays > 0
-      ? diffDays % averageLength === 0
-        ? averageLength
-        : diffDays % averageLength
-      : 1;
+  const currentCycleDay = Math.max(1, diffDays);
   const progressPct = Math.min(
     100,
     Math.round((currentCycleDay / averageLength) * 100),
   );
   const daysLeft = Math.max(0, averageLength - currentCycleDay);
+  const isDelayed = currentCycleDay > averageLength;
+  const delayedDays = isDelayed ? currentCycleDay - averageLength : 0;
 
-  return { day: currentCycleDay, total: averageLength, progressPct, daysLeft };
+  return {
+    day: currentCycleDay,
+    total: averageLength,
+    progressPct,
+    daysLeft,
+    isDelayed,
+    delayedDays,
+  };
 }
 
-// Format date helper
+// Format date helper with consistent timezone rendering
 function formatDate(date: Date | string | null | undefined) {
   if (!date) return "Not recorded";
-  return new Date(date).toLocaleDateString("en-US", {
+  const d = new Date(date);
+  return d.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
@@ -216,6 +242,51 @@ export default async function DashboardPage() {
     redirect("/onboarding");
   }
 
+  let activeLatestCycle = latestCycle;
+  let activeRecentCycles = recentCycles;
+
+  if (!activeLatestCycle && healthProfile.lastPeriodDate) {
+    const startDate = new Date(healthProfile.lastPeriodDate);
+    const averageCycleLength = healthProfile.averageCycleLength ?? 28;
+    const averagePeriodLength = healthProfile.averagePeriodLength ?? 5;
+
+    const predictedNextPeriod = calculateNextPeriod(
+      startDate,
+      averageCycleLength
+    );
+    const predictedOvulation =
+      calculateOvulationDate(predictedNextPeriod);
+    const { fertileStart, fertileEnd } =
+      calculateFertileWindow(predictedOvulation);
+    const phase = calculateCyclePhase(
+      startDate,
+      averagePeriodLength,
+      predictedOvulation
+    );
+
+    const endDate = new Date(
+      startDate.getTime() +
+        (averagePeriodLength - 1) * 24 * 60 * 60 * 1000
+    );
+
+    activeLatestCycle = await prisma.cycle.create({
+      data: {
+        userId,
+        startDate,
+        endDate,
+        periodLength: averagePeriodLength,
+        predictedNextPeriod,
+        predictedOvulation,
+        fertileStart,
+        fertileEnd,
+        phase,
+        notes: "Initial cycle recorded from health profile setup.",
+      },
+    });
+
+    activeRecentCycles = [activeLatestCycle];
+  }
+
   // Calculate BMI
   const heightM = healthProfile.heightCm / 100;
   const bmi = (healthProfile.weightKg / (heightM * heightM)).toFixed(1);
@@ -234,15 +305,22 @@ export default async function DashboardPage() {
   }
 
   // Phase & Cycle details
-  const currentPhase = latestCycle?.phase || "UNKNOWN";
+  const currentPhase = activeLatestCycle?.phase || "UNKNOWN";
   const phaseInfo = getPhaseDetails(currentPhase);
   const cycleLength = healthProfile.averageCycleLength || 28;
   const cycleProgress = calculateCycleProgress(
-    latestCycle?.startDate,
+    activeLatestCycle?.startDate,
     cycleLength,
   );
 
-  // Time of day greeting
+  // Time of day greeting & accurate current date
+  const todayDateFormatted = new Date().toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
   const hour = new Date().getHours();
   let timeGreeting = "Good morning";
   if (hour >= 12 && hour < 17) timeGreeting = "Good afternoon";
@@ -263,10 +341,17 @@ export default async function DashboardPage() {
 
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold tracking-wide border border-white/20">
+              <div className="inline-flex flex-wrap items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold tracking-wide border border-white/20">
                 <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                {phaseInfo.name} &bull; Day {cycleProgress.day} of{" "}
-                {cycleProgress.total}
+                <span>📅 {todayDateFormatted}</span>
+                <span>&bull;</span>
+                <span>{phaseInfo.name}</span>
+                <span>&bull;</span>
+                <span>
+                  {cycleProgress.isDelayed
+                    ? `Day ${cycleProgress.day} (${cycleProgress.delayedDays}d delayed)`
+                    : `Day ${cycleProgress.day} of ${cycleProgress.total}`}
+                </span>
               </div>
 
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
@@ -325,9 +410,15 @@ export default async function DashboardPage() {
               {phaseInfo.name}
             </p>
             <div className="mt-2 flex items-center justify-between text-xs">
-              <span className="text-gray-500">Day {cycleProgress.day}</span>
+              <span className="text-gray-500">
+                {cycleProgress.isDelayed
+                  ? `Day ${cycleProgress.day} (${cycleProgress.delayedDays}d late)`
+                  : `Day ${cycleProgress.day} of ${cycleProgress.total}`}
+              </span>
               <span className="font-semibold text-pink-600">
-                {latestCycle?.predictedNextPeriod
+                {cycleProgress.isDelayed
+                  ? "Period Delayed"
+                  : activeLatestCycle?.predictedNextPeriod
                   ? `Next in ${cycleProgress.daysLeft}d`
                   : "Active"}
               </span>
@@ -472,42 +563,48 @@ export default async function DashboardPage() {
                     Predicted Next Period
                   </span>
                   <p className="mt-1 text-base font-bold text-pink-900">
-                    {latestCycle?.predictedNextPeriod
-                      ? formatDate(latestCycle.predictedNextPeriod)
+                    {activeLatestCycle?.predictedNextPeriod
+                      ? formatDate(activeLatestCycle.predictedNextPeriod)
                       : "Record cycle for prediction"}
                   </p>
                   <p className="text-[11px] text-pink-600 mt-1">
-                    {latestCycle?.predictedNextPeriod
+                    {activeLatestCycle?.predictedNextPeriod
                       ? `Estimated in ${cycleProgress.daysLeft} days`
                       : "Tap 'Log Cycle' to predict"}
                   </p>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-purple-50/50 border border-purple-100/60">
-                  <span className="text-xs text-gray-500 font-medium block">
-                    Estimated Fertile Window
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500 font-medium block">
+                      Estimated Fertile Window
+                    </span>
+                    <span className="text-[10px] bg-purple-100 text-purple-700 font-semibold px-2 py-0.5 rounded-full">
+                      Peak Chance
+                    </span>
+                  </div>
                   <p className="mt-1 text-base font-bold text-purple-900">
-                    {latestCycle?.fertileStart && latestCycle?.fertileEnd
-                      ? `${formatDate(latestCycle.fertileStart)} – ${formatDate(latestCycle.fertileEnd)}`
+                    {activeLatestCycle?.fertileStart &&
+                    activeLatestCycle?.fertileEnd
+                      ? `${formatDate(activeLatestCycle.fertileStart)} – ${formatDate(activeLatestCycle.fertileEnd)}`
                       : "Prediction Pending"}
                   </p>
                   <p className="text-[11px] text-purple-600 mt-1">
-                    {latestCycle?.predictedOvulation
-                      ? `Ovulation approx: ${formatDate(latestCycle.predictedOvulation)}`
+                    {activeLatestCycle?.predictedOvulation
+                      ? `Ovulation: ${formatDate(activeLatestCycle.predictedOvulation)} (5d prior + 1d after)`
                       : "Calculated via rhythm algorithm"}
                   </p>
                 </div>
               </div>
 
               {/* Mood & Notes logged */}
-              {latestCycle?.mood && (
+              {activeLatestCycle?.mood && (
                 <div className="mt-5 p-3.5 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-between text-xs">
                   <span className="text-gray-500 font-medium">
                     Logged Mood:
                   </span>
                   <span className="font-semibold text-gray-800 bg-white px-3 py-1 rounded-xl shadow-xs">
-                    {latestCycle.mood}
+                    {activeLatestCycle.mood}
                   </span>
                 </div>
               )}
@@ -527,7 +624,7 @@ export default async function DashboardPage() {
                 </Link>
               </div>
 
-              {recentCycles.length === 0 ? (
+              {activeRecentCycles.length === 0 ? (
                 <div className="text-center py-8 text-gray-500 text-xs">
                   <p>No cycle history recorded yet.</p>
                   <Link
@@ -539,7 +636,7 @@ export default async function DashboardPage() {
                 </div>
               ) : (
                 <div className="mt-4 divide-y divide-gray-100">
-                  {recentCycles.map((cycle) => (
+                  {activeRecentCycles.map((cycle) => (
                     <div
                       key={cycle.id}
                       className="py-3 flex items-center justify-between text-xs"
