@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
@@ -31,6 +31,14 @@ export default function SymptomsPage() {
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Edit & Delete State
+  const [editingCheck, setEditingCheck] = useState<SymptomHistory | null>(null);
+  const [editNotes, setEditNotes] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [result, setResult] = useState<{
     title: string;
@@ -92,6 +100,7 @@ export default function SymptomsPage() {
     try {
       setChecking(true);
       setError("");
+      setSuccess("");
       setResult(null);
 
       const response = await fetch("/api/symptoms/check", {
@@ -114,6 +123,7 @@ export default function SymptomsPage() {
       setResult(data.result);
       setSelectedSymptoms([]);
       setNotes("");
+      setSuccess("Symptom assessment completed.");
 
       await loadData();
     } catch (err) {
@@ -122,6 +132,79 @@ export default function SymptomsPage() {
       );
     } finally {
       setChecking(false);
+    }
+  }
+
+  function handleEditCheck(check: SymptomHistory) {
+    setEditingCheck(check);
+    setEditNotes(check.notes ?? "");
+    setEditError("");
+  }
+
+  async function handleEditSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingCheck) return;
+
+    try {
+      setEditSaving(true);
+      setEditError("");
+
+      const response = await fetch(`/api/symptoms/history/${editingCheck.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          notes: editNotes || null,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message ?? "Unable to update symptom check.");
+      }
+
+      setEditingCheck(null);
+      setSuccess("Symptom check notes updated successfully.");
+      await loadData();
+    } catch (err) {
+      setEditError(
+        err instanceof Error ? err.message : "Unable to update symptom check."
+      );
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function handleDeleteCheck(id: string) {
+    if (!window.confirm("Are you sure you want to delete this symptom check record?")) {
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+      setError("");
+      setSuccess("");
+
+      const response = await fetch(`/api/symptoms/history/${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message ?? "Unable to delete symptom check.");
+      }
+
+      setSuccess("Symptom check record deleted successfully.");
+      await loadData();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to delete symptom check."
+      );
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -216,6 +299,10 @@ export default function SymptomsPage() {
             <p className="mt-4 text-xs text-red-600 font-medium">{error}</p>
           )}
 
+          {success && (
+            <p className="mt-4 text-xs text-emerald-600 font-medium">✓ {success}</p>
+          )}
+
           <button
             type="button"
             onClick={handleCheck}
@@ -281,16 +368,36 @@ export default function SymptomsPage() {
                   className="rounded-3xl bg-white p-6 shadow-xs border border-pink-100/60"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-gray-100">
-                    <h3 className="font-bold text-gray-900 text-sm">
-                      Symptom Check Summary
-                    </h3>
-                    <span className="text-xs text-gray-400">
-                      {new Date(check.createdAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-sm">
+                        Symptom Check Summary
+                      </h3>
+                      <span className="text-xs text-gray-400">
+                        {new Date(check.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleEditCheck(check)}
+                        className="px-2.5 py-1 text-xs font-medium text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition"
+                      >
+                        ✏️ Edit Notes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCheck(check.id)}
+                        disabled={deletingId === check.id}
+                        className="px-2.5 py-1 text-xs font-medium text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg disabled:opacity-50 transition"
+                      >
+                        {deletingId === check.id ? "Deleting..." : "🗑️ Delete"}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -324,6 +431,88 @@ export default function SymptomsPage() {
             </div>
           )}
         </section>
+
+        {/* Edit Notes Modal Overlay */}
+        {editingCheck && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+            <div className="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-purple-100 space-y-5">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 className="text-lg font-bold text-gray-900">
+                  ✏️ Edit Symptom Notes
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setEditingCheck(null)}
+                  className="text-gray-400 hover:text-gray-600 text-sm font-semibold p-1"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {editingCheck.symptoms.map((item) => (
+                    <span
+                      key={item.symptom.id}
+                      className="rounded-full bg-purple-50 border border-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-700"
+                    >
+                      {item.symptom.name}
+                    </span>
+                  ))}
+                </div>
+                {editingCheck.recommendation && (
+                  <p className="text-xs text-gray-500 bg-gray-50 p-2.5 rounded-xl">
+                    <span className="font-semibold text-gray-700">Recommendation: </span>
+                    {editingCheck.recommendation}
+                  </p>
+                )}
+              </div>
+
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="editNotesInput"
+                    className="mb-1 block text-xs font-semibold text-gray-700"
+                  >
+                    Personal Observations / Notes
+                  </label>
+                  <textarea
+                    id="editNotesInput"
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                    maxLength={2000}
+                    rows={4}
+                    placeholder="Update your notes for this check..."
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                  />
+                </div>
+
+                {editError && (
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+                    {editError}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingCheck(null)}
+                    className="rounded-xl px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editSaving}
+                    className="rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-5 py-2 text-xs font-semibold text-white shadow-xs disabled:opacity-50 transition"
+                  >
+                    {editSaving ? "Saving..." : "Save Notes"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer />

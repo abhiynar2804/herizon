@@ -54,9 +54,13 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    const { endDate, mood, notes, isPrivate } = validation.data;
+    const { startDate, endDate, mood, notes, isPrivate } = validation.data;
 
-    if (endDate && endDate < existingCycle.startDate) {
+    const effectiveStartDate = startDate ?? existingCycle.startDate;
+    const effectiveEndDate =
+      endDate !== undefined ? endDate : existingCycle.endDate;
+
+    if (effectiveEndDate && effectiveEndDate < effectiveStartDate) {
       return NextResponse.json(
         {
           message: "End date cannot be before cycle start date.",
@@ -65,12 +69,13 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    if (endDate) {
+    if (effectiveEndDate) {
       const nextCycle = await prisma.cycle.findFirst({
         where: {
           userId: session.user.id,
+          id: { not: existingCycle.id },
           startDate: {
-            gt: existingCycle.startDate,
+            gt: effectiveStartDate,
           },
         },
         orderBy: {
@@ -78,7 +83,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         },
       });
 
-      if (nextCycle && endDate >= nextCycle.startDate) {
+      if (nextCycle && effectiveEndDate >= nextCycle.startDate) {
         return NextResponse.json(
           {
             message:
@@ -91,8 +96,11 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     let periodLength = existingCycle.periodLength;
 
-    if (endDate) {
-      periodLength = calculatePeriodLength(existingCycle.startDate, endDate);
+    if (effectiveEndDate) {
+      periodLength = calculatePeriodLength(
+        effectiveStartDate,
+        effectiveEndDate,
+      );
     }
 
     const healthProfile = await prisma.healthProfile.findUnique({
@@ -102,14 +110,13 @@ export async function PATCH(request: Request, context: RouteContext) {
     });
 
     const averagePeriodLength = healthProfile?.averagePeriodLength ?? 5;
-
     const effectivePeriodLength = periodLength ?? averagePeriodLength;
 
     let phase = existingCycle.phase;
 
     if (existingCycle.predictedOvulation) {
       phase = calculateCyclePhase(
-        existingCycle.startDate,
+        effectiveStartDate,
         effectivePeriodLength,
         existingCycle.predictedOvulation,
       );
@@ -120,17 +127,14 @@ export async function PATCH(request: Request, context: RouteContext) {
         id: existingCycle.id,
       },
       data: {
+        startDate:
+          startDate !== undefined ? startDate : existingCycle.startDate,
         endDate: endDate !== undefined ? endDate : existingCycle.endDate,
-
         periodLength,
-
         mood: mood !== undefined ? mood : existingCycle.mood,
-
         notes: notes !== undefined ? notes : existingCycle.notes,
-
         isPrivate:
           isPrivate !== undefined ? isPrivate : existingCycle.isPrivate,
-
         phase,
       },
     });
@@ -145,6 +149,47 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch (error) {
     console.error("Update cycle error:", error);
 
+    return NextResponse.json(
+      { message: "Something went wrong." },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: Request, context: RouteContext) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await context.params;
+
+    const cycle = await prisma.cycle.findFirst({
+      where: {
+        id,
+        userId: session.user.id,
+      },
+    });
+
+    if (!cycle) {
+      return NextResponse.json(
+        { message: "Cycle not found." },
+        { status: 404 },
+      );
+    }
+
+    await prisma.cycle.delete({
+      where: { id },
+    });
+
+    return NextResponse.json(
+      { message: "Cycle deleted successfully." },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("Delete cycle error:", error);
     return NextResponse.json(
       { message: "Something went wrong." },
       { status: 500 },

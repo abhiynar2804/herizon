@@ -31,6 +31,16 @@ export default function PeriodPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Edit & Delete State
+  const [editingCycle, setEditingCycle] = useState<Cycle | null>(null);
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
+  const [editMood, setEditMood] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   useEffect(() => {
     loadCycles();
   }, []);
@@ -49,9 +59,7 @@ export default function PeriodPage() {
 
       setCycles(data.cycles ?? []);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Unable to load cycles."
-      );
+      setError(err instanceof Error ? err.message : "Unable to load cycles.");
     } finally {
       setLoading(false);
     }
@@ -98,11 +106,90 @@ export default function PeriodPage() {
 
       await loadCycles();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Unable to save period."
-      );
+      setError(err instanceof Error ? err.message : "Unable to save period.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  // Open edit modal and populate state
+  function handleEdit(cycle: Cycle) {
+    setEditingCycle(cycle);
+    // Format YYYY-MM-DD for date input fields
+    setEditStartDate(cycle.startDate ? cycle.startDate.split("T")[0] : "");
+    setEditEndDate(cycle.endDate ? cycle.endDate.split("T")[0] : "");
+    setEditMood(cycle.mood ?? "");
+    setEditNotes(cycle.notes ?? "");
+    setEditError("");
+  }
+
+  // Submit edit form to PATCH endpoint
+  async function handleEditSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingCycle) return;
+
+    try {
+      setEditSaving(true);
+      setEditError("");
+
+      const response = await fetch(`/api/cycles/${editingCycle.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          startDate: editStartDate || undefined,
+          endDate: editEndDate || undefined,
+          mood: editMood || undefined,
+          notes: editNotes || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message ?? "Unable to update cycle.");
+      }
+
+      setEditingCycle(null);
+      setSuccess("Cycle updated successfully.");
+      await loadCycles();
+    } catch (err) {
+      setEditError(
+        err instanceof Error ? err.message : "Unable to update cycle.",
+      );
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  // Call DELETE endpoint
+  async function handleDeleteCycle(id: string) {
+    if (!window.confirm("Are you sure you want to delete this cycle record?")) {
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+      setError("");
+      setSuccess("");
+
+      const response = await fetch(`/api/cycles/${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message ?? "Unable to delete cycle.");
+      }
+
+      setSuccess("Cycle deleted successfully.");
+      await loadCycles();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to delete cycle.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -129,7 +216,8 @@ export default function PeriodPage() {
             Period &amp; Cycle Intelligence
           </h1>
           <p className="text-gray-500 text-sm">
-            Record menstruation dates, track symptoms, and view personalized phase predictions.
+            Record menstruation dates, track symptoms, and view personalized
+            phase predictions.
           </p>
         </header>
 
@@ -255,6 +343,30 @@ export default function PeriodPage() {
                   className="rounded-3xl bg-white p-6 shadow-xs border border-pink-100/60"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-pink-50 border border-pink-100 px-3 py-1 text-xs font-semibold text-pink-700">
+                        {cycle.periodLength
+                          ? `${cycle.periodLength} days period`
+                          : "Ongoing"}
+                      </span>
+
+                      {/* Action Buttons */}
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(cycle)}
+                        className="px-2.5 py-1 text-xs font-medium text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCycle(cycle.id)}
+                        disabled={deletingId === cycle.id}
+                        className="px-2.5 py-1 text-xs font-medium text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg disabled:opacity-50 transition"
+                      >
+                        {deletingId === cycle.id ? "Deleting..." : "🗑️ Delete"}
+                      </button>
+                    </div>
                     <div>
                       <h3 className="font-bold text-gray-900 text-base">
                         {formatDate(cycle.startDate)}
@@ -278,28 +390,38 @@ export default function PeriodPage() {
 
                   <div className="mt-4 grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
                     <div className="p-3 rounded-2xl bg-gray-50">
-                      <span className="text-gray-400 block text-[11px]">Cycle Length</span>
+                      <span className="text-gray-400 block text-[11px]">
+                        Cycle Length
+                      </span>
                       <span className="font-semibold text-gray-800 mt-0.5 block">
-                        {cycle.cycleLength ? `${cycle.cycleLength} days` : "Calculating..."}
+                        {cycle.cycleLength
+                          ? `${cycle.cycleLength} days`
+                          : "Calculating..."}
                       </span>
                     </div>
 
                     <div className="p-3 rounded-2xl bg-pink-50/50">
-                      <span className="text-pink-600 block text-[11px]">Next Period</span>
+                      <span className="text-pink-600 block text-[11px]">
+                        Next Period
+                      </span>
                       <span className="font-bold text-pink-900 mt-0.5 block">
                         {formatDate(cycle.predictedNextPeriod)}
                       </span>
                     </div>
 
                     <div className="p-3 rounded-2xl bg-purple-50/50">
-                      <span className="text-purple-600 block text-[11px]">Ovulation</span>
+                      <span className="text-purple-600 block text-[11px]">
+                        Ovulation
+                      </span>
                       <span className="font-bold text-purple-900 mt-0.5 block">
                         {formatDate(cycle.predictedOvulation)}
                       </span>
                     </div>
 
                     <div className="p-3 rounded-2xl bg-gray-50">
-                      <span className="text-gray-400 block text-[11px]">Fertile Window</span>
+                      <span className="text-gray-400 block text-[11px]">
+                        Fertile Window
+                      </span>
                       <span className="font-semibold text-gray-800 mt-0.5 block">
                         {cycle.fertileStart && cycle.fertileEnd
                           ? `${formatDate(cycle.fertileStart)} – ${formatDate(cycle.fertileEnd)}`
@@ -324,6 +446,120 @@ export default function PeriodPage() {
             </div>
           )}
         </section>
+
+        {/* Edit Modal Overlay */}
+        {editingCycle && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+            <div className="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-pink-100 space-y-5">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 className="text-lg font-bold text-gray-900">
+                  ✏️ Edit Cycle Record
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setEditingCycle(null)}
+                  className="text-gray-400 hover:text-gray-600 text-sm font-semibold p-1"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor="editStartDate"
+                      className="mb-1 block text-xs font-semibold text-gray-700"
+                    >
+                      Start Date *
+                    </label>
+                    <input
+                      id="editStartDate"
+                      type="date"
+                      value={editStartDate}
+                      onChange={(e) => setEditStartDate(e.target.value)}
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2 text-sm text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="editEndDate"
+                      className="mb-1 block text-xs font-semibold text-gray-700"
+                    >
+                      End Date (Optional)
+                    </label>
+                    <input
+                      id="editEndDate"
+                      type="date"
+                      value={editEndDate}
+                      onChange={(e) => setEditEndDate(e.target.value)}
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2 text-sm text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="editMood"
+                    className="mb-1 block text-xs font-semibold text-gray-700"
+                  >
+                    Mood &amp; Sensations
+                  </label>
+                  <input
+                    id="editMood"
+                    type="text"
+                    value={editMood}
+                    onChange={(e) => setEditMood(e.target.value)}
+                    maxLength={100}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2 text-sm text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="editNotes"
+                    className="mb-1 block text-xs font-semibold text-gray-700"
+                  >
+                    Personal Notes
+                  </label>
+                  <textarea
+                    id="editNotes"
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                    maxLength={2000}
+                    rows={3}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2 text-sm text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  />
+                </div>
+
+                {editError && (
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+                    {editError}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingCycle(null)}
+                    className="rounded-xl px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editSaving}
+                    className="rounded-xl bg-pink-600 hover:bg-pink-700 px-5 py-2 text-xs font-semibold text-white shadow-xs disabled:opacity-50 transition"
+                  >
+                    {editSaving ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer />
