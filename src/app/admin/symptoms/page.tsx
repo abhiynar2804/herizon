@@ -35,20 +35,40 @@ export default function AdminSymptomsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Symptom Form State
+  // Symptom Create Form State
   const [symptomName, setSymptomName] = useState("");
   const [symptomDesc, setSymptomDesc] = useState("");
   const [symptomSeverity, setSymptomSeverity] =
     useState<SymptomSeverityLevel>("LOW");
   const [addingSymptom, setAddingSymptom] = useState(false);
 
-  // Rule Form State
+  // Symptom Edit State (Plan #04)
+  const [editingSymptom, setEditingSymptom] = useState<Symptom | null>(null);
+  const [editSymName, setEditSymName] = useState("");
+  const [editSymDesc, setEditSymDesc] = useState("");
+  const [editSymSeverity, setEditSymSeverity] =
+    useState<SymptomSeverityLevel>("LOW");
+  const [savingSymptom, setSavingSymptom] = useState(false);
+  const [deletingSymptomId, setDeletingSymptomId] = useState<string | null>(null);
+
+  // Rule Create Form State
   const [ruleTitle, setRuleTitle] = useState("");
   const [ruleRec, setRuleRec] = useState("");
   const [rulePriority, setRulePriority] = useState<RulePriorityLevel>("MEDIUM");
   const [ruleEmergency, setRuleEmergency] = useState(false);
   const [selectedSymptomIds, setSelectedSymptomIds] = useState<string[]>([]);
   const [addingRule, setAddingRule] = useState(false);
+
+  // Rule Edit State (Plan #04)
+  const [editingRule, setEditingRule] = useState<SymptomRule | null>(null);
+  const [editRuleTitle, setEditRuleTitle] = useState("");
+  const [editRuleRec, setEditRuleRec] = useState("");
+  const [editRulePriority, setEditRulePriority] =
+    useState<RulePriorityLevel>("MEDIUM");
+  const [editRuleEmergency, setEditRuleEmergency] = useState(false);
+  const [editRuleSymptomIds, setEditRuleSymptomIds] = useState<string[]>([]);
+  const [savingRule, setSavingRule] = useState(false);
+  const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
 
   useEffect(() => {
     loadAllData();
@@ -82,6 +102,7 @@ export default function AdminSymptomsPage() {
     }
   }
 
+  // SYMPTOM ACTIONS
   async function handleAddSymptom(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!symptomName.trim()) return;
@@ -116,26 +137,73 @@ export default function AdminSymptomsPage() {
     }
   }
 
-  async function handleDeleteSymptom(id: string) {
-    if (!confirm("Are you sure you want to delete this symptom?")) return;
+  function handleStartEditSymptom(s: Symptom) {
+    setEditingSymptom(s);
+    setEditSymName(s.name);
+    setEditSymDesc(s.description || "");
+    setEditSymSeverity(s.severity);
+    setError("");
+  }
+
+  async function handleUpdateSymptom(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingSymptom || !editSymName.trim()) return;
 
     try {
+      setSavingSymptom(true);
       setError("");
+      setSuccess("");
+
+      const response = await fetch(`/api/admin/symptoms/${editingSymptom.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editSymName.trim(),
+          description: editSymDesc.trim() || undefined,
+          severity: editSymSeverity,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Failed to update symptom.");
+
+      setSuccess("Symptom updated successfully!");
+      setEditingSymptom(null);
+      await loadAllData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error updating symptom.");
+    } finally {
+      setSavingSymptom(false);
+    }
+  }
+
+  async function handleDeleteSymptom(id: string) {
+    if (!confirm("Are you sure you want to deactivate this symptom?")) return;
+
+    try {
+      setDeletingSymptomId(id);
+      setError("");
+      setSuccess("");
+
       const response = await fetch(`/api/admin/symptoms/${id}`, {
         method: "DELETE",
       });
 
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.message || "Failed to delete symptom.");
+        throw new Error(data.message || "Failed to deactivate symptom.");
 
-      setSuccess("Symptom deleted successfully.");
+      setSuccess("Symptom deactivated successfully.");
       await loadAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error deleting symptom.");
+    } finally {
+      setDeletingSymptomId(null);
     }
   }
 
+  // RULE ACTIONS
   async function handleAddRule(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (
@@ -185,28 +253,101 @@ export default function AdminSymptomsPage() {
     }
   }
 
-  async function handleDeleteRule(id: string) {
-    if (!confirm("Delete this rule?")) return;
+  function handleStartEditRule(r: SymptomRule) {
+    setEditingRule(r);
+    setEditRuleTitle(r.title);
+    setEditRuleRec(r.recommendation);
+    setEditRulePriority(r.priority);
+    setEditRuleEmergency(r.isEmergency);
+    setEditRuleSymptomIds(r.conditions.map((c) => c.symptom.id));
+    setError("");
+  }
+
+  async function handleUpdateRule(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (
+      !editingRule ||
+      !editRuleTitle.trim() ||
+      !editRuleRec.trim() ||
+      editRuleSymptomIds.length === 0
+    ) {
+      setError(
+        "Please provide rule title, recommendation, and select at least one symptom condition.",
+      );
+      return;
+    }
 
     try {
+      setSavingRule(true);
       setError("");
+      setSuccess("");
+
+      const response = await fetch(
+        `/api/admin/symptom-rules/${editingRule.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: editRuleTitle.trim(),
+            recommendation: editRuleRec.trim(),
+            priority: editRulePriority,
+            isEmergency: editRuleEmergency,
+            symptomIds: editRuleSymptomIds,
+          }),
+        },
+      );
+
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Failed to update symptom rule.");
+
+      setSuccess("Symptom Rule updated successfully!");
+      setEditingRule(null);
+      await loadAllData();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Error updating symptom rule.",
+      );
+    } finally {
+      setSavingRule(false);
+    }
+  }
+
+  async function handleDeleteRule(id: string) {
+    if (!confirm("Are you sure you want to deactivate this rule?")) return;
+
+    try {
+      setDeletingRuleId(id);
+      setError("");
+      setSuccess("");
+
       const response = await fetch(`/api/admin/symptom-rules/${id}`, {
         method: "DELETE",
       });
 
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.message || "Failed to delete rule.");
+        throw new Error(data.message || "Failed to deactivate rule.");
 
-      setSuccess("Rule deleted successfully.");
+      setSuccess("Rule deactivated successfully.");
       await loadAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error deleting rule.");
+    } finally {
+      setDeletingRuleId(null);
     }
   }
 
   function toggleSymptomSelection(id: string) {
     setSelectedSymptomIds((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
+    );
+  }
+
+  function toggleEditRuleSymptomSelection(id: string) {
+    setEditRuleSymptomIds((current) =>
       current.includes(id)
         ? current.filter((item) => item !== id)
         : [...current, id],
@@ -223,7 +364,7 @@ export default function AdminSymptomsPage() {
             Symptoms &amp; Rule Engine Management
           </h1>
           <p className="text-xs text-slate-400">
-            Define symptoms and configure multi-symptom triage rules.
+            Define symptoms, edit clinical thresholds, and configure triage rules.
           </p>
         </header>
 
@@ -304,7 +445,7 @@ export default function AdminSymptomsPage() {
               </form>
             </section>
 
-            {/* Symptoms List */}
+            {/* Symptoms List with Edit & Delete (Plan #04) */}
             <section className="rounded-3xl bg-slate-900/80 p-6 border border-slate-800 space-y-4">
               <h2 className="text-sm font-bold text-white uppercase tracking-wider">
                 Active Symptoms Directory ({symptoms.length})
@@ -323,13 +464,23 @@ export default function AdminSymptomsPage() {
                       </span>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteSymptom(s.id)}
-                      className="text-slate-500 hover:text-red-400 transition text-xs px-2 py-1"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditSymptom(s)}
+                        className="px-2.5 py-1 rounded-lg bg-pink-950/60 hover:bg-pink-900/80 text-pink-300 border border-pink-800/60 text-xs transition"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSymptom(s.id)}
+                        disabled={deletingSymptomId === s.id}
+                        className="px-2.5 py-1 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/60 text-xs transition disabled:opacity-50"
+                      >
+                        {deletingSymptomId === s.id ? "..." : "Deactivate"}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -442,7 +593,7 @@ export default function AdminSymptomsPage() {
               </form>
             </section>
 
-            {/* Configured Rules List */}
+            {/* Configured Rules List with Edit & Delete (Plan #04) */}
             <section className="rounded-3xl bg-slate-900/80 p-6 border border-slate-800 space-y-4">
               <h2 className="text-sm font-bold text-white uppercase tracking-wider">
                 Configured Triage Rules ({rules.length})
@@ -467,10 +618,18 @@ export default function AdminSymptomsPage() {
                         )}
                         <button
                           type="button"
-                          onClick={() => handleDeleteRule(r.id)}
-                          className="text-slate-500 hover:text-red-400 transition ml-2 text-xs"
+                          onClick={() => handleStartEditRule(r)}
+                          className="px-2 py-1 rounded-lg bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 border border-purple-800/60 text-xs transition"
                         >
-                          Delete
+                          ✏️ Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRule(r.id)}
+                          disabled={deletingRuleId === r.id}
+                          className="px-2 py-1 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/60 text-xs transition disabled:opacity-50"
+                        >
+                          {deletingRuleId === r.id ? "..." : "Deactivate"}
                         </button>
                       </div>
                     </div>
@@ -495,6 +654,212 @@ export default function AdminSymptomsPage() {
             </section>
           </div>
         </div>
+
+        {/* Symptom Edit Modal Overlay (Plan #04) */}
+        {editingSymptom && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div className="w-full max-w-md rounded-3xl bg-slate-900 p-6 sm:p-8 shadow-2xl border border-slate-800 space-y-5 text-slate-100">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="text-base font-bold text-white">
+                  ✏️ Edit Symptom
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setEditingSymptom(null)}
+                  className="text-slate-400 hover:text-white text-sm font-semibold p-1"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateSymptom} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Symptom Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editSymName}
+                    onChange={(e) => setEditSymName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-pink-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Severity Level
+                  </label>
+                  <select
+                    value={editSymSeverity}
+                    onChange={(e) =>
+                      setEditSymSeverity(e.target.value as SymptomSeverityLevel)
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-pink-500"
+                  >
+                    <option value="LOW">LOW</option>
+                    <option value="MODERATE">MODERATE</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editSymDesc}
+                    onChange={(e) => setEditSymDesc(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-pink-500"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingSymptom(null)}
+                    className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-400 hover:bg-slate-800 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingSymptom}
+                    className="rounded-xl bg-pink-600 hover:bg-pink-700 px-5 py-2 text-xs font-semibold text-white shadow-xs disabled:opacity-50 transition"
+                  >
+                    {savingSymptom ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Rule Edit Modal Overlay (Plan #04) */}
+        {editingRule && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div className="w-full max-w-lg rounded-3xl bg-slate-900 p-6 sm:p-8 shadow-2xl border border-slate-800 space-y-5 text-slate-100 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="text-base font-bold text-white">
+                  ✏️ Edit Triage Rule
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setEditingRule(null)}
+                  className="text-slate-400 hover:text-white text-sm font-semibold p-1"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateRule} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Rule Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editRuleTitle}
+                    onChange={(e) => setEditRuleTitle(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">
+                      Priority Level
+                    </label>
+                    <select
+                      value={editRulePriority}
+                      onChange={(e) =>
+                        setEditRulePriority(e.target.value as RulePriorityLevel)
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-purple-500"
+                    >
+                      <option value="LOW">LOW</option>
+                      <option value="MEDIUM">MEDIUM</option>
+                      <option value="HIGH">HIGH</option>
+                      <option value="CRITICAL">CRITICAL</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center pt-5">
+                    <label className="flex items-center gap-2 text-slate-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={editRuleEmergency}
+                        onChange={(e) => setEditRuleEmergency(e.target.checked)}
+                        className="rounded border-slate-700 bg-slate-950 text-red-500 h-4 w-4"
+                      />
+                      <span className="text-xs text-red-400 font-semibold">
+                        Emergency Flag
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1.5">
+                    Select Symptom Conditions *
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 rounded-xl bg-slate-950 border border-slate-800">
+                    {symptoms.map((s) => {
+                      const selected = editRuleSymptomIds.includes(s.id);
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => toggleEditRuleSymptomSelection(s.id)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition ${
+                            selected
+                              ? "bg-purple-600 text-white font-bold"
+                              : "bg-slate-800 text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          {s.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Recommendation / Triage Instructions *
+                  </label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={editRuleRec}
+                    onChange={(e) => setEditRuleRec(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingRule(null)}
+                    className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-400 hover:bg-slate-800 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingRule}
+                    className="rounded-xl bg-purple-600 hover:bg-purple-700 px-5 py-2 text-xs font-semibold text-white shadow-xs disabled:opacity-50 transition"
+                  >
+                    {savingRule ? "Saving..." : "Save Rule Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
