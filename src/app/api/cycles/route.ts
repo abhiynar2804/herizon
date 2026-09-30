@@ -218,6 +218,24 @@ export async function POST(request: Request) {
       },
     });
 
+    if (predictedNextPeriod) {
+      const nextDateFormatted = new Date(predictedNextPeriod).toLocaleDateString(
+        "en-US",
+        { month: "short", day: "numeric", timeZone: "UTC" }
+      );
+      await prisma.notification.create({
+        data: {
+          userId: session.user.id,
+          title: "Upcoming Period Forecast",
+          message: `Your next cycle is estimated to begin around ${nextDateFormatted}. Keep your essentials and wellness routine ready.`,
+          type: "PERIOD_REMINDER",
+          channel: "IN_APP",
+          status: "PENDING",
+          scheduledFor: predictedNextPeriod,
+        },
+      });
+    }
+
     return NextResponse.json(
       {
         message: "Cycle created successfully.",

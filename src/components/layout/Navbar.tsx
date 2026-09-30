@@ -488,6 +488,17 @@ export default function Navbar({ userName, userEmail }: NavbarProps) {
                   </div>
 
                   <div className="py-1">
+                    <Link
+                      href="/profile"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-gray-700 hover:bg-pink-50 hover:text-pink-700 rounded-xl transition"
+                    >
+                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span>My Profile &amp; Security</span>
+                    </Link>
+
                     {!isPartner && (
                       <>
                         {session?.user?.role === "ADMIN" && (
@@ -518,7 +529,7 @@ export default function Navbar({ userName, userEmail }: NavbarProps) {
                           className="flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-gray-700 hover:bg-pink-50 hover:text-pink-700 rounded-xl transition"
                         >
                           <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                           <span>Update Health Profile</span>
                         </Link>
@@ -602,6 +613,17 @@ export default function Navbar({ userName, userEmail }: NavbarProps) {
           </div>
 
           <div className="pt-3 border-t border-gray-100 space-y-2">
+            <Link
+              href="/profile"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-gray-700 hover:bg-pink-50 transition"
+            >
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>My Profile &amp; Security</span>
+            </Link>
+
             <button
               type="button"
               onClick={() => signOut({ callbackUrl: "/login" })}
