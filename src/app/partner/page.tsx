@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
@@ -30,6 +31,22 @@ type SharingSetting = {
   shareReminders: boolean;
 };
 
+function formatDate(date?: string | null) {
+  if (!date) return "Unknown date";
+
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Unknown date";
+  }
+
+  return parsedDate.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function PartnerManagementPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -41,11 +58,11 @@ export default function PartnerManagementPage() {
   const [partner, setPartner] = useState<PartnerInfo | null>(null);
   const [sharing, setSharing] = useState<SharingSetting | null>(null);
 
-  // Invite input
   const [inviteEmail, setInviteEmail] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
-    fetchConnection();
+    void fetchConnection();
   }, []);
 
   async function fetchConnection() {
@@ -53,11 +70,16 @@ export default function PartnerManagementPage() {
       setLoading(true);
       setError("");
 
-      const response = await fetch("/api/partner/connection");
+      const response = await fetch("/api/partner/connection", {
+        cache: "no-store",
+      });
+
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to load partner connection.");
+        throw new Error(
+          data.message || "Failed to load partner connection.",
+        );
       }
 
       setConnected(data.connected);
@@ -66,7 +88,9 @@ export default function PartnerManagementPage() {
       setSharing(data.sharingSetting);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load connection data.",
+        err instanceof Error
+          ? err.message
+          : "Failed to load connection data.",
       );
     } finally {
       setLoading(false);
@@ -75,6 +99,7 @@ export default function PartnerManagementPage() {
 
   async function handleSendInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
     if (!inviteEmail.trim()) return;
 
     try {
@@ -100,10 +125,13 @@ export default function PartnerManagementPage() {
 
       setSuccess("Partner invitation sent successfully!");
       setInviteEmail("");
+
       await fetchConnection();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to send invitation.",
+        err instanceof Error
+          ? err.message
+          : "Failed to send invitation.",
       );
     } finally {
       setSubmitting(false);
@@ -120,7 +148,6 @@ export default function PartnerManagementPage() {
       [key]: !sharing[key],
     };
 
-    // Optimistic update
     setSharing(updated);
 
     try {
@@ -140,11 +167,18 @@ export default function PartnerManagementPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || "Failed to update sharing settings.");
+
+        throw new Error(
+          data.message || "Failed to update sharing settings.",
+        );
       }
     } catch (err) {
-      // Revert on error
-      setError(err instanceof Error ? err.message : "Failed to save setting.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to save setting.",
+      );
+
       await fetchConnection();
     }
   }
@@ -161,27 +195,51 @@ export default function PartnerManagementPage() {
     try {
       setSubmitting(true);
       setError("");
+      setSuccess("");
 
-      const response = await fetch("/api/partner/connection/disconnect", {
-        method: "POST",
-      });
+      const response = await fetch(
+        "/api/partner/connection/disconnect",
+        {
+          method: "POST",
+        },
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to disconnect partner.");
+        throw new Error(
+          data.message || "Failed to disconnect partner.",
+        );
       }
 
       setSuccess("Partner connection disconnected.");
+
       await fetchConnection();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to disconnect partner.",
+        err instanceof Error
+          ? err.message
+          : "Failed to disconnect partner.",
       );
     } finally {
       setSubmitting(false);
     }
   }
+
+  function handleNewInvitation() {
+    setError("");
+    setSuccess("");
+    setConnection(null);
+    setPartner(null);
+    setSharing(null);
+    setConnected(false);
+    setShowHistory(false);
+  }
+
+  const hasHistory =
+    connection &&
+    (connection.status === "REJECTED" ||
+      connection.status === "DISCONNECTED");
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50/70">
@@ -192,9 +250,11 @@ export default function PartnerManagementPage() {
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-100/70 text-pink-700 text-xs font-semibold">
             ❤️ Partner Sharing &amp; Privacy Sync
           </div>
+
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
             Partner Access Hub
           </h1>
+
           <p className="text-gray-500 text-sm">
             Invite one trusted partner to receive updates on your cycle phase
             and care tips with total privacy control.
@@ -220,21 +280,23 @@ export default function PartnerManagementPage() {
         ) : connected && partner && sharing ? (
           /* STATUS 1: ACTIVE CONNECTED PARTNER */
           <div className="space-y-6">
-            {/* Active Connection Banner Card */}
             <section className="rounded-3xl bg-white p-6 sm:p-8 shadow-xs border border-pink-100/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white font-bold text-lg flex items-center justify-center shadow-md shadow-pink-500/20">
                   {partner.name[0]?.toUpperCase() || "P"}
                 </div>
+
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-bold text-gray-900">
                       {partner.name}
                     </h2>
+
                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
                       ● Connected &amp; Active
                     </span>
                   </div>
+
                   <p className="text-xs text-gray-500 mt-0.5">
                     {partner.email}
                   </p>
@@ -251,12 +313,12 @@ export default function PartnerManagementPage() {
               </button>
             </section>
 
-            {/* Granular Privacy Toggles Card */}
             <section className="rounded-3xl bg-white p-6 sm:p-8 shadow-xs border border-pink-100/60 space-y-5">
               <div>
                 <h3 className="text-base font-bold text-gray-900">
                   Granular Sharing &amp; Privacy Settings
                 </h3>
+
                 <p className="text-xs text-gray-500 mt-1">
                   Choose exactly what information {partner.name} can view on
                   their Partner Dashboard.
@@ -264,22 +326,28 @@ export default function PartnerManagementPage() {
               </div>
 
               <div className="divide-y divide-gray-100">
-                {/* Toggle 1: Cycle Phase */}
+                {/* Toggle 1 */}
                 <div className="py-4 flex items-center justify-between gap-4">
                   <div>
                     <span className="text-sm font-bold text-gray-900 block">
                       🌸 Share Cycle Phase
                     </span>
+
                     <span className="text-xs text-gray-500">
                       Allows partner to see your current phase (Menstrual,
                       Follicular, Ovulation, Luteal).
                     </span>
                   </div>
+
                   <button
                     type="button"
-                    onClick={() => handleToggleSharing("shareCyclePhase")}
+                    onClick={() =>
+                      handleToggleSharing("shareCyclePhase")
+                    }
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      sharing.shareCyclePhase ? "bg-pink-600" : "bg-gray-200"
+                      sharing.shareCyclePhase
+                        ? "bg-pink-600"
+                        : "bg-gray-200"
                     }`}
                   >
                     <span
@@ -292,22 +360,28 @@ export default function PartnerManagementPage() {
                   </button>
                 </div>
 
-                {/* Toggle 2: Next Period Date */}
+                {/* Toggle 2 */}
                 <div className="py-4 flex items-center justify-between gap-4">
                   <div>
                     <span className="text-sm font-bold text-gray-900 block">
                       📅 Share Next Predicted Period Date
                     </span>
+
                     <span className="text-xs text-gray-500">
-                      Allows partner to view countdown for your upcoming period
-                      so they can support you.
+                      Allows partner to view countdown for your upcoming
+                      period so they can support you.
                     </span>
                   </div>
+
                   <button
                     type="button"
-                    onClick={() => handleToggleSharing("shareNextPeriod")}
+                    onClick={() =>
+                      handleToggleSharing("shareNextPeriod")
+                    }
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      sharing.shareNextPeriod ? "bg-pink-600" : "bg-gray-200"
+                      sharing.shareNextPeriod
+                        ? "bg-pink-600"
+                        : "bg-gray-200"
                     }`}
                   >
                     <span
@@ -320,46 +394,56 @@ export default function PartnerManagementPage() {
                   </button>
                 </div>
 
-                {/* Toggle 3: Mood */}
+                {/* Toggle 3 */}
                 <div className="py-4 flex items-center justify-between gap-4">
                   <div>
                     <span className="text-sm font-bold text-gray-900 block">
                       😊 Share Logged Mood &amp; Sensations
                     </span>
+
                     <span className="text-xs text-gray-500">
-                      Shows daily feelings or sensations logged in your period
-                      tracker.
+                      Shows daily feelings or sensations logged in your
+                      period tracker.
                     </span>
                   </div>
+
                   <button
                     type="button"
                     onClick={() => handleToggleSharing("shareMood")}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      sharing.shareMood ? "bg-pink-600" : "bg-gray-200"
+                      sharing.shareMood
+                        ? "bg-pink-600"
+                        : "bg-gray-200"
                     }`}
                   >
                     <span
                       className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                        sharing.shareMood ? "translate-x-5" : "translate-x-0"
+                        sharing.shareMood
+                          ? "translate-x-5"
+                          : "translate-x-0"
                       }`}
                     />
                   </button>
                 </div>
 
-                {/* Toggle 4: Care Suggestions */}
+                {/* Toggle 4 */}
                 <div className="py-4 flex items-center justify-between gap-4">
                   <div>
                     <span className="text-sm font-bold text-gray-900 block">
                       💡 Share Care &amp; Support Suggestions
                     </span>
+
                     <span className="text-xs text-gray-500">
-                      Provides partner with practical supportive actions (e.g.
-                      heating pads, herbal teas, quiet rest).
+                      Provides partner with practical supportive actions
+                      (e.g. heating pads, herbal teas, quiet rest).
                     </span>
                   </div>
+
                   <button
                     type="button"
-                    onClick={() => handleToggleSharing("shareCareSuggestions")}
+                    onClick={() =>
+                      handleToggleSharing("shareCareSuggestions")
+                    }
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                       sharing.shareCareSuggestions
                         ? "bg-pink-600"
@@ -376,21 +460,27 @@ export default function PartnerManagementPage() {
                   </button>
                 </div>
 
-                {/* Toggle 5: Reminders */}
+                {/* Toggle 5 */}
                 <div className="py-4 flex items-center justify-between gap-4">
                   <div>
                     <span className="text-sm font-bold text-gray-900 block">
                       🔔 Share Care Reminders
                     </span>
+
                     <span className="text-xs text-gray-500">
                       Notifies partner of key supportive check-in milestones.
                     </span>
                   </div>
+
                   <button
                     type="button"
-                    onClick={() => handleToggleSharing("shareReminders")}
+                    onClick={() =>
+                      handleToggleSharing("shareReminders")
+                    }
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      sharing.shareReminders ? "bg-pink-600" : "bg-gray-200"
+                      sharing.shareReminders
+                        ? "bg-pink-600"
+                        : "bg-gray-200"
                     }`}
                   >
                     <span
@@ -405,7 +495,7 @@ export default function PartnerManagementPage() {
               </div>
             </section>
           </div>
-        ) : connection && connection.status === "PENDING" && partner ? (
+        ) : connection && connection.status === "PENDING" ? (
           /* STATUS 2: PENDING INVITATION */
           <div className="space-y-6">
             <section className="rounded-3xl bg-white p-6 sm:p-8 shadow-xs border border-pink-100/60 space-y-4">
@@ -413,22 +503,21 @@ export default function PartnerManagementPage() {
                 <span className="p-2 rounded-xl bg-amber-50 text-amber-600 text-xl">
                   ⏳
                 </span>
+
                 <div>
                   <h2 className="text-base font-bold text-gray-900">
                     Partner Invitation Pending
                   </h2>
+
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Invitation sent to{" "}
-                    <span className="font-semibold text-gray-800">
-                      {partner.email}
-                    </span>
-                    .
+                    Your partner invitation is waiting for acceptance.
                   </p>
                 </div>
               </div>
 
               <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-100 text-xs text-amber-900 space-y-2">
                 <p className="font-semibold">What happens next?</p>
+
                 <p className="leading-relaxed">
                   Your partner needs to sign into Herizon with their partner
                   account and accept the invitation to complete the sync.
@@ -442,25 +531,119 @@ export default function PartnerManagementPage() {
                   disabled={submitting}
                   className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium transition"
                 >
-                  Cancel Invitation
+                  {submitting ? "Cancelling..." : "Cancel Invitation"}
                 </button>
               </div>
             </section>
           </div>
+        ) : connection && connection.status === "REJECTED" ? (
+          /* STATUS 3: REJECTED */
+          <div className="space-y-6">
+            <section className="rounded-3xl bg-white p-6 sm:p-8 shadow-xs border border-red-100 space-y-5">
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-xl shrink-0">
+                  ✕
+                </div>
+
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">
+                    Partner Invitation Declined
+                  </h2>
+
+                  <p className="text-sm text-gray-500 mt-1">
+                    Your partner invitation was declined.
+                  </p>
+
+                  <p className="text-xs text-gray-400 mt-2">
+                    Invitation sent on {formatDate(connection.invitedAt)}.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs text-gray-600">
+                You can send a new partner invitation whenever you are ready.
+              </div>
+
+              <button
+                type="button"
+                onClick={handleNewInvitation}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold transition"
+              >
+                Send New Invitation
+              </button>
+            </section>
+
+            <ConnectionHistory
+              connection={connection}
+              partner={partner}
+              showHistory={showHistory}
+              setShowHistory={setShowHistory}
+            />
+          </div>
+        ) : connection && connection.status === "DISCONNECTED" ? (
+          /* STATUS 4: DISCONNECTED */
+          <div className="space-y-6">
+            <section className="rounded-3xl bg-white p-6 sm:p-8 shadow-xs border border-gray-200 space-y-5">
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-gray-100 text-gray-600 flex items-center justify-center text-xl shrink-0">
+                  ↔
+                </div>
+
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">
+                    Partner Connection Disconnected
+                  </h2>
+
+                  <p className="text-sm text-gray-500 mt-1">
+                    This partner connection was disconnected.
+                  </p>
+
+                  <p className="text-xs text-gray-400 mt-2">
+                    Disconnected on{" "}
+                    {formatDate(connection.disconnectedAt)}.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs text-gray-600">
+                Your previous partner no longer has access to your shared
+                information.
+              </div>
+
+              <button
+                type="button"
+                onClick={handleNewInvitation}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold transition"
+              >
+                Invite a New Partner
+              </button>
+            </section>
+
+            <ConnectionHistory
+              connection={connection}
+              partner={partner}
+              showHistory={showHistory}
+              setShowHistory={setShowHistory}
+            />
+          </div>
         ) : (
-          /* STATUS 3: UNCONNECTED - INVITE FORM */
+          /* STATUS 5: UNCONNECTED - INVITE FORM */
           <section className="rounded-3xl bg-white p-6 sm:p-8 shadow-xs border border-pink-100/60 space-y-6">
             <div>
               <h2 className="text-lg font-bold text-gray-900">
                 Connect Your Partner
               </h2>
+
               <p className="text-xs text-gray-500 mt-1 leading-relaxed max-w-lg">
                 Invite your partner to receive an exclusive, privacy-focused
                 dashboard. You remain in 100% control of what data is shared.
               </p>
             </div>
 
-            <form onSubmit={handleSendInvite} className="space-y-4 max-w-md">
+            <form
+              onSubmit={handleSendInvite}
+              className="space-y-4 max-w-md"
+            >
               <div>
                 <label
                   htmlFor="inviteEmail"
@@ -468,6 +651,7 @@ export default function PartnerManagementPage() {
                 >
                   Partner Email Address *
                 </label>
+
                 <input
                   id="inviteEmail"
                   type="email"
@@ -477,6 +661,7 @@ export default function PartnerManagementPage() {
                   placeholder="partner@example.com"
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 text-sm text-pink-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition"
                 />
+
                 <p className="text-[11px] text-gray-400 mt-1">
                   Note: Partner must be registered on Herizon with a Partner
                   role account.
@@ -499,6 +684,7 @@ export default function PartnerManagementPage() {
                 <span className="font-bold text-pink-900 block mb-0.5">
                   🔒 What stays private?
                 </span>
+
                 <p className="text-gray-500 leading-relaxed text-[11px]">
                   Your health profile, detailed symptoms, private notes, and AI
                   conversations are NEVER shared.
@@ -509,6 +695,7 @@ export default function PartnerManagementPage() {
                 <span className="font-bold text-purple-900 block mb-0.5">
                   ❤️ What can be shared?
                 </span>
+
                 <p className="text-gray-500 leading-relaxed text-[11px]">
                   Only cycle phase, predicted period timeframe, mood, and
                   supportive care suggestions.
@@ -517,9 +704,122 @@ export default function PartnerManagementPage() {
             </div>
           </section>
         )}
+
+        {/* Show history for any historical connection */}
+        {!loading && !hasHistory && connection && (
+          <ConnectionHistory
+            connection={connection}
+            partner={partner}
+            showHistory={showHistory}
+            setShowHistory={setShowHistory}
+          />
+        )}
       </main>
 
       <Footer />
     </div>
+  );
+}
+
+function ConnectionHistory({
+  connection,
+  partner,
+  showHistory,
+  setShowHistory,
+}: {
+  connection: ConnectionInfo;
+  partner: PartnerInfo | null;
+  showHistory: boolean;
+  setShowHistory: (value: boolean) => void;
+}) {
+  return (
+    <section className="rounded-3xl bg-white border border-gray-200 shadow-xs overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setShowHistory(!showHistory)}
+        className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-gray-50 transition"
+      >
+        <div>
+          <h2 className="text-base font-bold text-gray-900">
+            Connection History
+          </h2>
+
+          <p className="text-xs text-gray-500 mt-1">
+            View the previous partner connection status and dates.
+          </p>
+        </div>
+
+        <span className="text-gray-400 text-lg">
+          {showHistory ? "⌃" : "⌄"}
+        </span>
+      </button>
+
+      {showHistory && (
+        <div className="border-t border-gray-100 px-6 py-5">
+          <div className="flex items-start gap-4">
+            <div
+              className={`h-10 w-10 rounded-xl flex items-center justify-center text-sm ${
+                connection.status === "REJECTED"
+                  ? "bg-red-50 text-red-600"
+                  : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {connection.status === "REJECTED" ? "✕" : "↔"}
+            </div>
+
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-sm font-bold text-gray-900">
+                  {partner?.name || "Partner Connection"}
+                </h3>
+
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    connection.status === "REJECTED"
+                      ? "bg-red-50 text-red-600 border border-red-100"
+                      : "bg-gray-100 text-gray-600 border border-gray-200"
+                  }`}
+                >
+                  {connection.status}
+                </span>
+              </div>
+
+              {partner?.email && (
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {partner.email}
+                </p>
+              )}
+
+              <div className="mt-3 space-y-1 text-[11px] text-gray-500">
+                <p>
+                  Invitation sent:{" "}
+                  <span className="font-medium text-gray-700">
+                    {formatDate(connection.invitedAt)}
+                  </span>
+                </p>
+
+                {connection.acceptedAt && (
+                  <p>
+                    Accepted:{" "}
+                    <span className="font-medium text-gray-700">
+                      {formatDate(connection.acceptedAt)}
+                    </span>
+                  </p>
+                )}
+
+                {connection.disconnectedAt && (
+                  <p>
+                    Disconnected:{" "}
+                    <span className="font-medium text-gray-700">
+                      {formatDate(connection.disconnectedAt)}
+                    </span>
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

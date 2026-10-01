@@ -336,6 +336,13 @@ export async function GET() {
             phase,
             notes: "Initial cycle recorded from health profile setup.",
           },
+          include: {
+            symptoms: {
+              include: {
+                symptom: true,
+              },
+            },
+          },
         });
 
         cycles = [initialCycle];

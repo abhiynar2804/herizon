@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Navbar from "@/components/layout/Navbar";
@@ -24,91 +24,104 @@ export default function PartnerRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [processingToken, setProcessingToken] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const loadRequests = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const loadRequests = useCallback(async () => {
+  try {
+    setLoading(true);
+    setError("");
 
-      const response = await fetch("/api/partner/requests", {
-        cache: "no-store",
-      });
+    const response = await fetch("/api/partner/requests", {
+      cache: "no-store",
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to load requests.");
-      }
-
-      setRequests(data.requests || []);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load partner requests.",
-      );
-    } finally {
-      setLoading(false);
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to load requests.");
     }
-  };
+
+    setRequests(data.requests || []);
+  } catch (err) {
+    setError(
+      err instanceof Error
+        ? err.message
+        : "Failed to load partner requests.",
+    );
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     void loadRequests();
   }, [loadRequests]);
 
   async function handleAccept(token: string) {
-    try {
-      setProcessingToken(token);
-      setError("");
+  try {
+    setProcessingToken(token);
+    setError("");
+    setSuccess("");
 
-      const response = await fetch(`/api/partner/invite/${token}/accept`, {
-        method: "POST",
-      });
+    const response = await fetch(`/api/partner/invite/${token}/accept`, {
+      method: "POST",
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to accept invitation.");
-      }
-
-      router.push("/partner/dashboard");
-      router.refresh();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to accept invitation.",
-      );
-      setProcessingToken("");
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to accept invitation.");
     }
+
+    setSuccess("Partner invitation accepted successfully.");
+
+    router.push("/partner/dashboard");
+    router.refresh();
+  } catch (err) {
+    setError(
+      err instanceof Error
+        ? err.message
+        : "Failed to accept invitation.",
+    );
+    setProcessingToken("");
   }
+}
 
   async function handleDecline(token: string) {
-    if (!confirm("Are you sure you want to decline this invitation?")) {
-      return;
-    }
-
-    try {
-      setProcessingToken(token);
-      setError("");
-
-      const response = await fetch(`/api/partner/invite/${token}/decline`, {
-        method: "POST",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to decline invitation.");
-      }
-
-      setRequests((current) =>
-        current.filter((request) => request.inviteToken !== token),
-      );
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to decline invitation.",
-      );
-    } finally {
-      setProcessingToken("");
-    }
+  if (!confirm("Are you sure you want to decline this invitation?")) {
+    return;
   }
+
+  try {
+    setProcessingToken(token);
+    setError("");
+    setSuccess("");
+
+    const response = await fetch(`/api/partner/invite/${token}/decline`, {
+      method: "POST",
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to decline invitation.");
+    }
+
+    setRequests((current) =>
+      current.filter((request) => request.inviteToken !== token),
+    );
+
+    setSuccess("Partner invitation declined.");
+  } catch (err) {
+    setError(
+      err instanceof Error
+        ? err.message
+        : "Failed to decline invitation.",
+    );
+  } finally {
+    setProcessingToken("");
+  }
+}
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50/70">
@@ -136,6 +149,11 @@ export default function PartnerRequestsPage() {
               {error}
             </div>
           )}
+          {success && (
+  <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium">
+    {success}
+  </div>
+)}
 
           {loading ? (
             <div className="rounded-3xl bg-white border border-pink-100/60 p-10 text-center text-sm text-gray-500">
@@ -209,7 +227,7 @@ export default function PartnerRequestsPage() {
                           onClick={() => handleAccept(request.inviteToken)}
                           className="px-4 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold transition disabled:opacity-50"
                         >
-                          {processing ? "Processing..." : "Accept"}
+                          {processing ? "Accepting..." : "Accept"}
                         </button>
                       </div>
                     </div>
