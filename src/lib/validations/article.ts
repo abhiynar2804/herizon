@@ -34,7 +34,8 @@ export const articleSchema = z.object({
     .string()
     .trim()
     .url("Cover image must be a valid URL.")
-    .optional(),
+    .optional()
+    .or(z.literal("")),
 
   status: z
     .enum(["DRAFT", "PUBLISHED", "ARCHIVED"])

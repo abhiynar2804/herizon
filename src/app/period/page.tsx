@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import CycleCalendar from "@/components/period/CycleCalendar";
 
 type SymptomItem = {
   id: string;
@@ -39,6 +40,7 @@ export default function PeriodPage() {
   const [cycles, setCycles] = useState<Cycle[]>([]);
   const [availableSymptoms, setAvailableSymptoms] = useState<SymptomItem[]>([]);
   const [selectedSymptomIds, setSelectedSymptomIds] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -405,11 +407,43 @@ export default function PeriodPage() {
           </form>
         </section>
 
-        {/* History List */}
+        {/* History / Visual Calendar Section */}
         <section className="space-y-4">
-          <h2 className="text-xl font-bold text-gray-900">
-            Recorded Cycles &amp; Predictions
-          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Cycle Records &amp; Predictions
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Switch between monthly visual calendar and chronological record list.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-gray-100/80 border border-gray-200 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setViewMode("calendar")}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                  viewMode === "calendar"
+                    ? "bg-white text-pink-600 shadow-xs"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                📅 Calendar View
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                  viewMode === "list"
+                    ? "bg-white text-pink-600 shadow-xs"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                📋 List View ({cycles.length})
+              </button>
+            </div>
+          </div>
 
           {loading ? (
             <div className="rounded-3xl bg-white p-8 text-center text-xs text-gray-500">
@@ -419,6 +453,8 @@ export default function PeriodPage() {
             <div className="rounded-3xl bg-white p-8 text-center text-xs text-gray-500">
               No cycle records found. Add your first record above!
             </div>
+          ) : viewMode === "calendar" ? (
+            <CycleCalendar cycles={cycles} onEditCycle={handleEdit} />
           ) : (
             <div className="space-y-4">
               {cycles.map((cycle) => (

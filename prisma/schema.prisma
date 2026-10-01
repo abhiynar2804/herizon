@@ -91,12 +91,14 @@ model User {
   name          String
   email         String   @unique
   passwordHash  String
-  role          Role     @default(USER)
-  isActive      Boolean  @default(true)
-  emailVerified Boolean  @default(false)
-  avatarUrl     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  role                    Role      @default(USER)
+  isActive                Boolean   @default(true)
+  emailVerified           Boolean   @default(false)
+  emailVerificationToken  String?   @unique
+  emailVerificationExpiry DateTime?
+  avatarUrl               String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   // Health
   healthProfile HealthProfile?

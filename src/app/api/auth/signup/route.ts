@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -40,6 +42,8 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = await hashPassword(password);
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     const user = await prisma.user.create({
       data: {
@@ -47,19 +51,30 @@ export async function POST(request: Request) {
         email: normalizedEmail,
         passwordHash,
         role: assignedRole,
+        emailVerified: false,
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiry: verificationExpiry,
       },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        emailVerified: true,
         createdAt: true,
       },
     });
 
+    // Send verification email
+    await sendVerificationEmail({
+      to: user.email,
+      name: user.name,
+      token: verificationToken,
+    });
+
     return NextResponse.json(
       {
-        message: "User created successfully.",
+        message: "User created successfully. Please verify your email.",
         user,
       },
       { status: 201 }

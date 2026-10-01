@@ -58,6 +58,59 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  request: Request,
+  context: RouteContext
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await context.params;
+    const body = await request.json();
+    const title = typeof body.title === "string" ? body.title.trim() : "";
+
+    const chatSession = await prisma.chatSession.findFirst({
+      where: {
+        id,
+        userId: session.user.id,
+      },
+    });
+
+    if (!chatSession) {
+      return NextResponse.json(
+        { message: "Chat session not found." },
+        { status: 404 }
+      );
+    }
+
+    const updated = await prisma.chatSession.update({
+      where: { id: chatSession.id },
+      data: {
+        title: title || "New Consultation",
+      },
+    });
+
+    return NextResponse.json({
+      message: "Chat session updated successfully.",
+      session: updated,
+    });
+  } catch (error) {
+    console.error("AI session PATCH error:", error);
+
+    return NextResponse.json(
+      { message: "Unable to update chat session." },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   _request: Request,
   context: RouteContext

@@ -182,6 +182,7 @@ export default async function DashboardPage() {
     chatSessions,
     articles,
     notifications,
+    partnerConnection,
   ] = await Promise.all([
     prisma.healthProfile.findUnique({
       where: { userId },
@@ -235,6 +236,19 @@ export default async function DashboardPage() {
       where: { userId },
       orderBy: { createdAt: "desc" },
       take: 4,
+    }),
+
+    prisma.partnerConnection.findFirst({
+      where: {
+        OR: [
+          { inviterUserId: userId, status: "ACCEPTED" },
+          { inviteeUserId: userId, status: "ACCEPTED" },
+        ],
+      },
+      include: {
+        inviter: { select: { id: true, name: true, email: true } },
+        invitee: { select: { id: true, name: true, email: true } },
+      },
     }),
   ]);
 
@@ -659,6 +673,12 @@ export default async function DashboardPage() {
                             ? `${cycle.periodLength} days`
                             : "Active"}
                         </span>
+                        <Link
+                          href="/period"
+                          className="text-pink-600 hover:underline text-[11px] font-semibold"
+                        >
+                          {!cycle.endDate ? "Add End Date →" : "View →"}
+                        </Link>
                       </div>
                     </div>
                   ))}
@@ -669,6 +689,39 @@ export default async function DashboardPage() {
 
           {/* Right Column: Daily Hormone Advice & AI / Symptom Shortcuts (5 Cols) */}
           <div className="lg:col-span-5 space-y-6">
+            {/* Partner Connection Status Card if connected */}
+            {partnerConnection && (
+              <div className="rounded-3xl bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-rose-500/10 p-5 border border-pink-200/80 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🤝</span>
+                    <span className="text-xs font-bold text-gray-900">
+                      Partner Connected
+                    </span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                    Active Sync
+                  </span>
+                </div>
+                <p className="mt-2 text-xs font-semibold text-gray-800">
+                  {partnerConnection.inviterUserId === userId
+                    ? partnerConnection.invitee.name
+                    : partnerConnection.inviter.name}
+                </p>
+                <p className="text-[11px] text-gray-500">
+                  {partnerConnection.inviterUserId === userId
+                    ? partnerConnection.invitee.email
+                    : partnerConnection.inviter.email}
+                </p>
+                <Link
+                  href="/partner"
+                  className="mt-3 inline-block text-xs font-semibold text-pink-600 hover:underline"
+                >
+                  Manage Shared Cycle &amp; Notes →
+                </Link>
+              </div>
+            )}
+
             {/* Phase Guidance & Wellness Tips Card */}
             <div className="rounded-3xl bg-gradient-to-br from-white to-pink-50/40 p-6 sm:p-8 shadow-xs border border-pink-100">
               <div className="flex items-center gap-2.5">
@@ -757,6 +810,13 @@ export default async function DashboardPage() {
                       )}
                     </div>
                   ))}
+
+                  <Link
+                    href="/symptoms"
+                    className="mt-3 block text-center text-xs font-semibold text-purple-600 hover:underline pt-2 border-t border-gray-100"
+                  >
+                    View Full Symptom History →
+                  </Link>
                 </div>
               ) : (
                 <div className="text-center py-6 text-xs text-gray-500">
@@ -969,27 +1029,39 @@ export default async function DashboardPage() {
                 <Link
                   key={article.id}
                   href={`/resources/${article.slug}`}
-                  className="rounded-3xl bg-white p-5 border border-pink-100/60 shadow-xs hover:shadow-md transition group flex flex-col justify-between"
+                  className="rounded-3xl bg-white overflow-hidden border border-pink-100/60 shadow-xs hover:shadow-md transition group flex flex-col justify-between"
                 >
-                  <div>
-                    <span className="px-2.5 py-1 rounded-full bg-pink-50 text-pink-700 text-[10px] font-bold tracking-wide uppercase">
-                      {article.category.name}
-                    </span>
-                    <h4 className="font-bold text-gray-900 text-sm mt-2.5 group-hover:text-pink-600 transition line-clamp-2">
-                      {article.title}
-                    </h4>
-                    {article.summary && (
-                      <p className="text-xs text-gray-500 mt-2 line-clamp-2 leading-relaxed">
-                        {article.summary}
-                      </p>
-                    )}
-                  </div>
+                  {article.coverImage && (
+                    <div className="w-full h-36 overflow-hidden bg-gray-100">
+                      <img
+                        src={article.coverImage}
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                    </div>
+                  )}
 
-                  <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400 font-medium">
-                    <span>5 min read</span>
-                    <span className="text-pink-600 font-semibold group-hover:translate-x-1 transition-transform">
-                      Read Article →
-                    </span>
+                  <div className="p-5 flex-1 flex flex-col justify-between">
+                    <div>
+                      <span className="px-2.5 py-1 rounded-full bg-pink-50 text-pink-700 text-[10px] font-bold tracking-wide uppercase">
+                        {article.category.name}
+                      </span>
+                      <h4 className="font-bold text-gray-900 text-sm mt-2.5 group-hover:text-pink-600 transition line-clamp-2">
+                        {article.title}
+                      </h4>
+                      {article.summary && (
+                        <p className="text-xs text-gray-500 mt-2 line-clamp-2 leading-relaxed">
+                          {article.summary}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400 font-medium">
+                      <span>5 min read</span>
+                      <span className="text-pink-600 font-semibold group-hover:translate-x-1 transition-transform">
+                        Read Article →
+                      </span>
+                    </div>
                   </div>
                 </Link>
               ))}

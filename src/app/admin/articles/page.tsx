@@ -45,6 +45,7 @@ export default function AdminArticlesPage() {
   const [artTitle, setArtTitle] = useState("");
   const [artSlug, setArtSlug] = useState("");
   const [artCatId, setArtCatId] = useState("");
+  const [artCoverImage, setArtCoverImage] = useState("");
   const [artSummary, setArtSummary] = useState("");
   const [artContent, setArtContent] = useState("");
   const [artStatus, setArtStatus] = useState<ArticleStatus>("PUBLISHED");
@@ -55,6 +56,7 @@ export default function AdminArticlesPage() {
   const [editArtTitle, setEditArtTitle] = useState("");
   const [editArtSlug, setEditArtSlug] = useState("");
   const [editArtCatId, setEditArtCatId] = useState("");
+  const [editCoverImage, setEditCoverImage] = useState("");
   const [editArtSummary, setEditArtSummary] = useState("");
   const [editArtContent, setEditArtContent] = useState("");
   const [editArtStatus, setEditArtStatus] = useState<ArticleStatus>("PUBLISHED");
@@ -228,6 +230,7 @@ export default function AdminArticlesPage() {
           title: artTitle.trim(),
           slug: autoSlug,
           categoryId: artCatId,
+          coverImage: artCoverImage.trim() || undefined,
           summary: artSummary.trim() || undefined,
           content: artContent.trim(),
           status: artStatus,
@@ -241,6 +244,7 @@ export default function AdminArticlesPage() {
       setSuccess("Educational Article saved successfully!");
       setArtTitle("");
       setArtSlug("");
+      setArtCoverImage("");
       setArtSummary("");
       setArtContent("");
       await loadAllData();
@@ -256,6 +260,7 @@ export default function AdminArticlesPage() {
     setEditArtTitle(article.title);
     setEditArtSlug(article.slug);
     setEditArtCatId(article.category.id);
+    setEditCoverImage(article.coverImage || "");
     setEditArtSummary(article.summary || "");
     setEditArtContent(article.content);
     setEditArtStatus(article.status);
@@ -288,6 +293,7 @@ export default function AdminArticlesPage() {
           title: editArtTitle.trim(),
           slug: autoSlug,
           categoryId: editArtCatId,
+          coverImage: editCoverImage.trim() || undefined,
           summary: editArtSummary.trim() || undefined,
           content: editArtContent.trim(),
           status: editArtStatus,
@@ -519,6 +525,19 @@ export default function AdminArticlesPage() {
 
                 <div>
                   <label className="block text-slate-300 font-semibold mb-1">
+                    Cover Image URL (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    value={artCoverImage}
+                    onChange={(e) => setArtCoverImage(e.target.value)}
+                    placeholder="https://images.unsplash.com/... or /images/..."
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
                     Summary / Excerpt
                   </label>
                   <input
@@ -564,19 +583,33 @@ export default function AdminArticlesPage() {
                 {articles.map((art) => (
                   <div
                     key={art.id}
-                    className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs space-y-2"
+                    className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs space-y-2.5"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white">
-                          {art.title}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px]">
-                          {art.category.name}
-                        </span>
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1">
+                        {art.coverImage && (
+                          <img
+                            src={art.coverImage}
+                            alt={art.title}
+                            className="w-16 h-12 object-cover rounded-xl border border-slate-800 shrink-0"
+                          />
+                        )}
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-white text-sm">
+                              {art.title}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px]">
+                              {art.category.name}
+                            </span>
+                          </div>
+                          <span className="text-slate-500 text-[10px] block font-mono">
+                            /{art.slug} {art.publishedAt ? `· ${new Date(art.publishedAt).toLocaleDateString()}` : ""}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 self-end sm:self-start shrink-0">
                         <span
                           className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             art.status === "PUBLISHED"
@@ -606,6 +639,12 @@ export default function AdminArticlesPage() {
                     {art.summary && (
                       <p className="text-slate-400 text-[11px] leading-relaxed">
                         {art.summary}
+                      </p>
+                    )}
+
+                    {art.content && (
+                      <p className="text-slate-500 text-[10px] leading-relaxed line-clamp-2 italic">
+                        {art.content.slice(0, 160)}...
                       </p>
                     )}
                   </div>
@@ -758,6 +797,19 @@ export default function AdminArticlesPage() {
                       <option value="ARCHIVED">ARCHIVED</option>
                     </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Cover Image URL (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    value={editCoverImage}
+                    onChange={(e) => setEditCoverImage(e.target.value)}
+                    placeholder="https://images.unsplash.com/... or /images/..."
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-purple-500"
+                  />
                 </div>
 
                 <div>

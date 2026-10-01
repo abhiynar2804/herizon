@@ -20,6 +20,7 @@ function SignupForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,6 +28,11 @@ function SignupForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+
+    if (!agreeTerms) {
+      setError("Please accept the Terms of Service and Privacy Policy.");
+      return;
+    }
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters long.");
@@ -415,10 +421,35 @@ function SignupForm() {
           </div>
         </div>
 
-        {/* Real-time Checklist */}
+        {/* Real-time Checklist & Strength Meter */}
         {password.length > 0 && (
-          <div className="p-3 bg-gray-50/70 rounded-xl space-y-1.5 text-xs text-gray-500 border border-gray-100">
-            <div className="flex items-center gap-2">
+          <div className="p-3 bg-gray-50/70 rounded-xl space-y-2 text-xs text-gray-500 border border-gray-100">
+            {/* Strength Bar */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Password Strength</span>
+                <span className={`text-[10px] font-bold ${
+                  password.length >= 10 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)
+                    ? "text-emerald-600"
+                    : password.length >= 8 && (/[A-Z]/.test(password) || /[0-9]/.test(password))
+                    ? "text-amber-600"
+                    : "text-rose-500"
+                }`}>
+                  {password.length >= 10 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)
+                    ? "Strong"
+                    : password.length >= 8 && (/[A-Z]/.test(password) || /[0-9]/.test(password))
+                    ? "Medium"
+                    : "Weak"}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 h-1.5 w-full">
+                <div className={`rounded-full ${password.length >= 8 ? "bg-amber-400" : "bg-rose-400"}`} />
+                <div className={`rounded-full ${password.length >= 8 && (/[A-Z]/.test(password) || /[0-9]/.test(password)) ? "bg-amber-400" : "bg-gray-200"}`} />
+                <div className={`rounded-full ${password.length >= 10 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password) ? "bg-emerald-500" : "bg-gray-200"}`} />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1 border-t border-gray-100">
               <span
                 className={`flex h-4 w-4 rounded-full items-center justify-center text-[10px] ${
                   isLengthValid
@@ -432,6 +463,7 @@ function SignupForm() {
                 At least 8 characters
               </span>
             </div>
+
             {confirmPassword.length > 0 && (
               <div className="flex items-center gap-2">
                 <span
@@ -456,6 +488,20 @@ function SignupForm() {
             )}
           </div>
         )}
+
+        {/* Terms of Service & Privacy Acceptance */}
+        <label className="flex items-start gap-2.5 text-xs text-gray-600 cursor-pointer pt-1">
+          <input
+            type="checkbox"
+            required
+            checked={agreeTerms}
+            onChange={(e) => setAgreeTerms(e.target.checked)}
+            className="mt-0.5 rounded border-gray-300 text-pink-600 focus:ring-pink-500 h-4 w-4 shrink-0"
+          />
+          <span className="leading-snug">
+            I agree to Herizon&apos;s Terms of Service and Privacy Policy, and understand this platform provides educational guidance.
+          </span>
+        </label>
 
         {/* Submit Button */}
         <button

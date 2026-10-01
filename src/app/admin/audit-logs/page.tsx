@@ -35,7 +35,7 @@ export default function AdminAuditLogsPage() {
         throw new Error(data.message || "Failed to load audit logs.");
       }
 
-      setLogs(data.logs || []);
+      setLogs(Array.isArray(data) ? data : data.logs || []);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load audit logs.",
@@ -52,8 +52,8 @@ export default function AdminAuditLogsPage() {
   const filteredLogs = logs.filter(
     (log) =>
       log.action.toLowerCase().includes(search.toLowerCase()) ||
-      log.actor.name.toLowerCase().includes(search.toLowerCase()) ||
-      log.actor.email.toLowerCase().includes(search.toLowerCase()) ||
+      (log.actor?.name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (log.actor?.email || "").toLowerCase().includes(search.toLowerCase()) ||
       (log.details && log.details.toLowerCase().includes(search.toLowerCase())),
   );
 
@@ -134,10 +134,10 @@ export default function AdminAuditLogsPage() {
 
                       <td className="py-3.5 px-6 font-sans">
                         <div className="font-semibold text-white">
-                          {log.actor.name}
+                          {log.actor?.name || "System"}
                         </div>
                         <div className="text-[10px] text-slate-400">
-                          {log.actor.email}
+                          {log.actor?.email || "-"}
                         </div>
                       </td>
 
