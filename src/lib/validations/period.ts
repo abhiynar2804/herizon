@@ -15,6 +15,7 @@ export const periodEntrySchema = z
       .max(2000, "Notes are too long")
       .optional(),
     isPrivate: z.boolean().optional(),
+    symptomIds: z.array(z.string()).optional(),
   })
   .superRefine((data, ctx) => {
     const today = new Date();
@@ -77,6 +78,7 @@ export const periodUpdateSchema = z.object({
     .optional(),
 
   isPrivate: z.boolean().optional(),
+  symptomIds: z.array(z.string()).optional(),
 });
 
 export type PeriodUpdateInput = z.infer<

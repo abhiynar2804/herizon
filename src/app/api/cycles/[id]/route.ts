@@ -54,7 +54,8 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    const { startDate, endDate, mood, notes, isPrivate } = validation.data;
+    const { startDate, endDate, mood, notes, isPrivate, symptomIds } =
+      validation.data;
 
     const effectiveStartDate = startDate ?? existingCycle.startDate;
     const effectiveEndDate =
@@ -122,6 +123,22 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
+    if (symptomIds !== undefined) {
+      await prisma.cycleSymptom.deleteMany({
+        where: { cycleId: existingCycle.id },
+      });
+
+      if (symptomIds.length > 0) {
+        await prisma.cycleSymptom.createMany({
+          data: symptomIds.map((symptomId) => ({
+            cycleId: existingCycle.id,
+            symptomId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
+
     const updatedCycle = await prisma.cycle.update({
       where: {
         id: existingCycle.id,
@@ -136,6 +153,13 @@ export async function PATCH(request: Request, context: RouteContext) {
         isPrivate:
           isPrivate !== undefined ? isPrivate : existingCycle.isPrivate,
         phase,
+      },
+      include: {
+        symptoms: {
+          include: {
+            symptom: true,
+          },
+        },
       },
     });
 

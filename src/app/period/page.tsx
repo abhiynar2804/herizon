@@ -4,6 +4,21 @@ import { FormEvent, useEffect, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
+type SymptomItem = {
+  id: string;
+  name: string;
+  severity: string;
+};
+
+type CycleSymptom = {
+  id?: string;
+  symptom: {
+    id: string;
+    name: string;
+    severity?: string;
+  };
+};
+
 type Cycle = {
   id: string;
   startDate: string;
@@ -17,10 +32,14 @@ type Cycle = {
   fertileStart: string | null;
   fertileEnd: string | null;
   phase: string;
+  symptoms?: CycleSymptom[];
 };
 
 export default function PeriodPage() {
   const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [availableSymptoms, setAvailableSymptoms] = useState<SymptomItem[]>([]);
+  const [selectedSymptomIds, setSelectedSymptomIds] = useState<string[]>([]);
+
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [mood, setMood] = useState("");
@@ -37,32 +56,60 @@ export default function PeriodPage() {
   const [editEndDate, setEditEndDate] = useState("");
   const [editMood, setEditMood] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editSymptomIds, setEditSymptomIds] = useState<string[]>([]);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadCycles();
+    loadData();
   }, []);
 
-  async function loadCycles() {
+  async function loadData() {
     try {
       setLoading(true);
       setError("");
 
-      const response = await fetch("/api/cycles");
-      const data = await response.json();
+      const [cyclesResponse, symptomsResponse] = await Promise.all([
+        fetch("/api/cycles"),
+        fetch("/api/symptoms"),
+      ]);
 
-      if (!response.ok) {
-        throw new Error(data.message ?? "Unable to load cycles.");
+      const cyclesData = await cyclesResponse.json();
+      const symptomsData = await symptomsResponse.json();
+
+      if (!cyclesResponse.ok) {
+        throw new Error(cyclesData.message ?? "Unable to load cycles.");
       }
 
-      setCycles(data.cycles ?? []);
+      setCycles(cyclesData.cycles ?? []);
+
+      if (symptomsResponse.ok) {
+        setAvailableSymptoms(
+          symptomsData.symptoms ?? (Array.isArray(symptomsData) ? symptomsData : [])
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load cycles.");
     } finally {
       setLoading(false);
     }
+  }
+
+  function toggleLogSymptom(id: string) {
+    setSelectedSymptomIds((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    );
+  }
+
+  function toggleEditSymptom(id: string) {
+    setEditSymptomIds((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    );
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -89,6 +136,8 @@ export default function PeriodPage() {
           mood: mood || undefined,
           notes: notes || undefined,
           isPrivate: false,
+          symptomIds:
+            selectedSymptomIds.length > 0 ? selectedSymptomIds : undefined,
         }),
       });
 
@@ -103,8 +152,9 @@ export default function PeriodPage() {
       setEndDate("");
       setMood("");
       setNotes("");
+      setSelectedSymptomIds([]);
 
-      await loadCycles();
+      await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save period.");
     } finally {
@@ -120,6 +170,9 @@ export default function PeriodPage() {
     setEditEndDate(cycle.endDate ? cycle.endDate.split("T")[0] : "");
     setEditMood(cycle.mood ?? "");
     setEditNotes(cycle.notes ?? "");
+    setEditSymptomIds(
+      cycle.symptoms?.map((s) => s.symptom.id) ?? []
+    );
     setEditError("");
   }
 
@@ -142,6 +195,7 @@ export default function PeriodPage() {
           endDate: editEndDate || undefined,
           mood: editMood || undefined,
           notes: editNotes || undefined,
+          symptomIds: editSymptomIds,
         }),
       });
 
@@ -153,7 +207,7 @@ export default function PeriodPage() {
 
       setEditingCycle(null);
       setSuccess("Cycle updated successfully.");
-      await loadCycles();
+      await loadData();
     } catch (err) {
       setEditError(
         err instanceof Error ? err.message : "Unable to update cycle.",
@@ -185,7 +239,7 @@ export default function PeriodPage() {
       }
 
       setSuccess("Cycle deleted successfully.");
-      await loadCycles();
+      await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to delete cycle.");
     } finally {
@@ -216,7 +270,7 @@ export default function PeriodPage() {
             Period &amp; Cycle Intelligence
           </h1>
           <p className="text-gray-500 text-sm">
-            Record menstruation dates, track symptoms, and view personalized
+            Record menstruation dates, link experienced symptoms, and view personalized
             phase predictions.
           </p>
         </header>
@@ -263,6 +317,36 @@ export default function PeriodPage() {
               </div>
             </div>
 
+            {/* Linked Symptoms Selector (Plan #10) */}
+            {availableSymptoms.length > 0 && (
+              <div>
+                <label className="mb-2 block text-xs font-semibold text-gray-700">
+                  Symptoms Experienced During This Cycle (Optional)
+                </label>
+                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1">
+                  {availableSymptoms.map((symptom) => {
+                    const selected = selectedSymptomIds.includes(symptom.id);
+
+                    return (
+                      <button
+                        key={symptom.id}
+                        type="button"
+                        onClick={() => toggleLogSymptom(symptom.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-medium transition border ${
+                          selected
+                            ? "bg-pink-600 text-white border-pink-600 shadow-xs"
+                            : "bg-gray-50/60 text-gray-700 border-gray-200 hover:border-pink-300 hover:bg-pink-50/30"
+                        }`}
+                      >
+                        {selected ? "✓ " : "+ "}
+                        {symptom.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div>
               <label
                 htmlFor="mood"
@@ -277,7 +361,7 @@ export default function PeriodPage() {
                 onChange={(event) => setMood(event.target.value)}
                 maxLength={100}
                 placeholder="e.g. Energetic, mild cramps, calm, tender breasts"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm text-pink-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
               />
             </div>
 
@@ -343,6 +427,20 @@ export default function PeriodPage() {
                   className="rounded-3xl bg-white p-6 shadow-xs border border-pink-100/60"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-gray-100">
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-base">
+                        {formatDate(cycle.startDate)}
+                        {" → "}
+                        {formatDate(cycle.endDate)}
+                      </h3>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        Phase:{" "}
+                        <span className="font-semibold text-pink-600">
+                          {cycle.phase}
+                        </span>
+                      </p>
+                    </div>
+
                     <div className="flex items-center gap-2">
                       <span className="rounded-full bg-pink-50 border border-pink-100 px-3 py-1 text-xs font-semibold text-pink-700">
                         {cycle.periodLength
@@ -367,25 +465,6 @@ export default function PeriodPage() {
                         {deletingId === cycle.id ? "Deleting..." : "🗑️ Delete"}
                       </button>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-gray-900 text-base">
-                        {formatDate(cycle.startDate)}
-                        {" → "}
-                        {formatDate(cycle.endDate)}
-                      </h3>
-                      <p className="mt-0.5 text-xs text-gray-500">
-                        Phase:{" "}
-                        <span className="font-semibold text-pink-600">
-                          {cycle.phase}
-                        </span>
-                      </p>
-                    </div>
-
-                    <span className="rounded-full bg-pink-50 border border-pink-100 px-3 py-1 text-xs font-semibold text-pink-700">
-                      {cycle.periodLength
-                        ? `${cycle.periodLength} days period`
-                        : "Ongoing"}
-                    </span>
                   </div>
 
                   <div className="mt-4 grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
@@ -430,6 +509,23 @@ export default function PeriodPage() {
                     </div>
                   </div>
 
+                  {/* Linked Symptoms Display on Cycle Card (Plan #10) */}
+                  {cycle.symptoms && cycle.symptoms.length > 0 && (
+                    <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] font-semibold text-gray-400 mr-1">
+                        Symptoms:
+                      </span>
+                      {cycle.symptoms.map((item) => (
+                        <span
+                          key={item.symptom.id}
+                          className="px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-100 text-xs text-rose-700 font-medium"
+                        >
+                          {item.symptom.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
                   {cycle.mood && (
                     <p className="mt-3 text-xs text-gray-600">
                       <strong>Mood / Sensations:</strong> {cycle.mood}
@@ -450,7 +546,7 @@ export default function PeriodPage() {
         {/* Edit Modal Overlay */}
         {editingCycle && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-            <div className="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-pink-100 space-y-5">
+            <div className="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-pink-100 space-y-5 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                 <h3 className="text-lg font-bold text-gray-900">
                   ✏️ Edit Cycle Record
@@ -499,6 +595,36 @@ export default function PeriodPage() {
                     />
                   </div>
                 </div>
+
+                {/* Edit Modal Symptoms Selector (Plan #10) */}
+                {availableSymptoms.length > 0 && (
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold text-gray-700">
+                      Symptoms Experienced
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 border border-gray-100 rounded-xl bg-gray-50/30">
+                      {availableSymptoms.map((symptom) => {
+                        const selected = editSymptomIds.includes(symptom.id);
+
+                        return (
+                          <button
+                            key={symptom.id}
+                            type="button"
+                            onClick={() => toggleEditSymptom(symptom.id)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition border ${
+                              selected
+                                ? "bg-pink-600 text-white border-pink-600"
+                                : "bg-white text-gray-600 border-gray-200 hover:border-pink-300"
+                            }`}
+                          >
+                            {selected ? "✓ " : "+ "}
+                            {symptom.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label

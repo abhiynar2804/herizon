@@ -36,7 +36,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const { startDate, endDate, mood, notes, isPrivate } = validation.data;
+    const { startDate, endDate, mood, notes, isPrivate, symptomIds } =
+      validation.data;
 
     if (endDate && endDate < startDate) {
       return NextResponse.json(
@@ -215,6 +216,22 @@ export async function POST(request: Request) {
         fertileStart,
         fertileEnd,
         phase,
+        ...(symptomIds && symptomIds.length > 0
+          ? {
+              symptoms: {
+                create: symptomIds.map((symptomId) => ({
+                  symptomId,
+                })),
+              },
+            }
+          : {}),
+      },
+      include: {
+        symptoms: {
+          include: {
+            symptom: true,
+          },
+        },
       },
     });
 
@@ -264,6 +281,13 @@ export async function GET() {
     let cycles = await prisma.cycle.findMany({
       where: {
         userId: session.user.id,
+      },
+      include: {
+        symptoms: {
+          include: {
+            symptom: true,
+          },
+        },
       },
       orderBy: {
         startDate: "desc",
