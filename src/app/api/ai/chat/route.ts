@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { gemini, GEMINI_MODEL } from "@/lib/ai/gemini";
+import { gemini, GEMINI_MODEL, FALLBACK_MODEL } from "@/lib/ai/gemini";
 
 const chatSchema = z.object({
   sessionId: z.string().cuid().optional(),
@@ -15,11 +15,40 @@ const chatSchema = z.object({
     .max(2000, "Message is too long."),
 });
 
+function isGeminiServiceUnavailable(error: unknown) {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const details = error as {
+    status?: unknown;
+    code?: unknown;
+    message?: unknown;
+  };
+  const message =
+    typeof details.message === "string" ? details.message.toLowerCase() : "";
+
+  return (
+    details.status === 503 ||
+    details.status === "503" ||
+    details.code === 503 ||
+    details.code === "503" ||
+    message.includes("503") ||
+    message.includes("high demand") ||
+    message.includes("service unavailable")
+  );
+}
+
 const SYSTEM_INSTRUCTION = `
 You are Herizon AI, a women's health and wellness educational assistant.
 
 Your role is to provide general, educational information about women's health,
 menstrual health, wellness, nutrition, fitness, and common health concerns.
+
+Response Style & Format:
+- Provide clear, well-structured, and fully completed answers.
+- Avoid cutting off mid-explanation. Keep summaries helpful yet concise.
+- Keep Content Below 2000 Characters: If your response exceeds 2000 characters, summarize the content.
 
 Important safety rules:
 - Do not diagnose diseases or medical conditions.
@@ -37,10 +66,7 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -51,7 +77,7 @@ export async function POST(request: Request) {
         {
           message: parsed.error.issues[0]?.message ?? "Invalid request.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -78,7 +104,7 @@ export async function POST(request: Request) {
       if (!chatSession) {
         return NextResponse.json(
           { message: "Chat session not found." },
-          { status: 404 }
+          { status: 404 },
         );
       }
     } else {
@@ -110,22 +136,44 @@ export async function POST(request: Request) {
       parts: [{ text: message }],
     });
 
-    const response = await gemini.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: history,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.4,
-        maxOutputTokens: 600,
-      },
-    });
+    let response;
+
+    try {
+      response = await gemini.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: history,
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION,
+          temperature: 0.4,
+          maxOutputTokens: 2804,
+        },
+      });
+    } catch (error) {
+      if (!isGeminiServiceUnavailable(error)) {
+        throw error;
+      }
+
+      console.warn(
+        `[Gemini API] ${GEMINI_MODEL} unavailable. Retrying with ${FALLBACK_MODEL}.`,
+      );
+
+      response = await gemini.models.generateContent({
+        model: FALLBACK_MODEL,
+        contents: history,
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION,
+          temperature: 0.4,
+          maxOutputTokens: 2804,
+        },
+      });
+    }
 
     const aiMessage = response.text?.trim();
 
     if (!aiMessage) {
       return NextResponse.json(
         { message: "The AI returned an empty response." },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
@@ -142,9 +190,7 @@ export async function POST(request: Request) {
         id: chatSession.id,
       },
       data: {
-        title:
-          chatSession.title ??
-          message.slice(0, 60),
+        title: chatSession.title ?? message.slice(0, 60),
       },
     });
 
@@ -157,7 +203,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { message: "Unable to process your request right now." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

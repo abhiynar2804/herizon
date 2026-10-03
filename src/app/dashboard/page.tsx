@@ -121,11 +121,7 @@ function calculateCycleProgress(
     start.getUTCDate(),
   );
   const now = new Date();
-  const nowUTC = Date.UTC(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  );
+  const nowUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
 
   const diffTime = nowUTC - startUTC;
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
@@ -266,21 +262,19 @@ export default async function DashboardPage() {
 
     const predictedNextPeriod = calculateNextPeriod(
       startDate,
-      averageCycleLength
+      averageCycleLength,
     );
-    const predictedOvulation =
-      calculateOvulationDate(predictedNextPeriod);
+    const predictedOvulation = calculateOvulationDate(predictedNextPeriod);
     const { fertileStart, fertileEnd } =
       calculateFertileWindow(predictedOvulation);
     const phase = calculateCyclePhase(
       startDate,
       averagePeriodLength,
-      predictedOvulation
+      predictedOvulation,
     );
 
     const endDate = new Date(
-      startDate.getTime() +
-        (averagePeriodLength - 1) * 24 * 60 * 60 * 1000
+      startDate.getTime() + (averagePeriodLength - 1) * 24 * 60 * 60 * 1000,
     );
 
     activeLatestCycle = await prisma.cycle.create({
@@ -433,8 +427,8 @@ export default async function DashboardPage() {
                 {cycleProgress.isDelayed
                   ? "Period Delayed"
                   : activeLatestCycle?.predictedNextPeriod
-                  ? `Next in ${cycleProgress.daysLeft}d`
-                  : "Active"}
+                    ? `Next in ${cycleProgress.daysLeft}d`
+                    : "Active"}
               </span>
             </div>
           </div>
@@ -831,7 +825,7 @@ export default async function DashboardPage() {
               )}
             </div>
 
-            {/* Herizon AI Prompt Starter Card */}
+            {/* Herizon AI Prompt Starter Card 
             <div className="rounded-3xl bg-gradient-to-br from-purple-900 to-indigo-900 text-white p-6 shadow-md">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 rounded-xl bg-white/20 text-sm">🤖</span>
@@ -863,9 +857,9 @@ export default async function DashboardPage() {
               >
                 Open Herizon AI Chat
               </Link>
-            </div>
+            </div> */}
 
-            {/* Active Reminders & In-App Notifications Card */}
+            {/* Active Reminders & In-App Notifications Card 
             <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-xs border border-pink-100/60">
               <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                 <div className="flex items-center gap-2">
@@ -923,7 +917,7 @@ export default async function DashboardPage() {
                   <p>All caught up! No active reminders.</p>
                 </div>
               )}
-            </div>
+            </div> */}
           </div>
         </section>
 

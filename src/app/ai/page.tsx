@@ -230,8 +230,8 @@ export default function AIPage() {
     <div className="min-h-screen flex flex-col bg-gray-50/70">
       <Navbar />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
-        <div className="flex-1 bg-white rounded-3xl shadow-xs border border-pink-100/60 flex flex-col lg:flex-row overflow-hidden min-h-[600px]">
+      <main className="flex-1 w-full mx-auto flex flex-col">
+        <div className="flex-1 bg-white shadow-xs border border-pink-100/60 flex flex-col lg:flex-row overflow-hidden min-h-[600px]">
           {/* Sidebar */}
           <aside className="w-full lg:w-72 border-b lg:border-b-0 lg:border-r border-gray-100 p-4 bg-gray-50/50 flex flex-col">
             <button
