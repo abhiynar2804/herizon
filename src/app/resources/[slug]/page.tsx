@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
+import { prisma } from "@/lib/prisma";
+
 type Resource = {
   id: string;
   title: string;
@@ -10,7 +12,7 @@ type Resource = {
   summary: string | null;
   content: string;
   coverImage: string | null;
-  publishedAt: string | null;
+  publishedAt: Date | string | null;
   category: {
     id: string;
     name: string;
@@ -19,23 +21,31 @@ type Resource = {
 
 async function getResource(slug: string): Promise<Resource | null> {
   try {
-    const response = await fetch(
-      `${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/resources/${slug}`,
-      {
-        cache: "no-store",
+    const article = await prisma.article.findFirst({
+      where: {
+        slug,
+        status: "PUBLISHED",
       },
-    );
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        summary: true,
+        content: true,
+        coverImage: true,
+        publishedAt: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
 
-    if (response.status === 404) {
-      return null;
-    }
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch resource.");
-    }
-
-    return response.json();
-  } catch {
+    return article;
+  } catch (error) {
+    console.error("Error fetching resource:", error);
     return null;
   }
 }

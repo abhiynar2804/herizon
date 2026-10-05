@@ -24,13 +24,14 @@ function getPhaseDetails(phase: string | null | undefined) {
         icon: "🩸",
         tagline: "Rest, Replenish & Gentle Movement",
         description:
-          "Estrogen and progesterone are at their baseline. Your body is shedding the uterine lining.",
+          "Estrogen and progesterone reach their lowest levels as your body sheds the uterine lining. Energy naturally dips, prioritizing physical rest and recovery.",
         tips: [
-          "Focus on iron & magnesium rich foods (spinach, dark chocolate, lentils).",
-          "Hydrate well with warm herbal teas (chamomile, ginger, raspberry leaf).",
-          "Prioritize gentle stretching, restorative yoga, and restorative rest.",
+          "Replenish iron and magnesium with leafy greens, dark chocolate, lentils, and pumpkin seeds.",
+          "Sip warm, anti-inflammatory teas like ginger, chamomile, or raspberry leaf to soothe cramps.",
+          "Prioritize restorative yoga, light stretching, or walking instead of intense workouts.",
         ],
       };
+
     case "FOLLICULAR":
       return {
         name: "Follicular Phase",
@@ -40,13 +41,14 @@ function getPhaseDetails(phase: string | null | undefined) {
         icon: "🌱",
         tagline: "Rising Energy & High Neuroplasticity",
         description:
-          "Estrogen is rising, stimulating follicular growth. Energy and cognitive focus are on an upward trend.",
+          "Estrogen rises to stimulate follicle growth, triggering a surge in physical energy, mood, and cognitive clarity.",
         tips: [
-          "Great time for high-intensity training, creative brainstorming, and new projects.",
-          "Incorporate fermented foods, fresh veggies, and lean proteins.",
-          "Natural estrogen surge supports skin glow and elevated mood.",
+          "Capitalize on peak focus—ideal for planning, creative brainstorming, and starting new projects.",
+          "Fuel up with vibrant, gut-friendly foods like fermented veggies, lean protein, and fresh berries.",
+          "Progressively increase workout intensity with strength training, cardio, or HIIT sessions.",
         ],
       };
+
     case "OVULATION":
       return {
         name: "Ovulation Phase",
@@ -56,13 +58,14 @@ function getPhaseDetails(phase: string | null | undefined) {
         icon: "✨",
         tagline: "Peak Fertility & Maximum Vitality",
         description:
-          "Luteinizing hormone (LH) and estrogen peak, triggering egg release. Peak confidence and social stamina.",
+          "Luteinizing Hormone (LH) and estrogen peak to release an egg. Social stamina, libido, and energy levels are at their cycle high.",
         tips: [
-          "Peak energy window: ideal for presentations, public speaking, and tough workouts.",
-          "Eat glutathione-rich foods (broccoli, avocado, asparagus) to support liver metabolism of estrogen.",
-          "Track body temperature or cervical changes for fertility accuracy.",
+          "Leverage peak confidence for major presentations, public speaking, or intense PR-attempt workouts.",
+          "Eat cruciferous veggies (broccoli, Brussels sprouts, asparagus) to assist liver breakdown of excess estrogen.",
+          "Track basal body temperature or cervical fluid changes to pin down your exact fertile window.",
         ],
       };
+
     case "LUTEAL":
       return {
         name: "Luteal Phase",
@@ -72,13 +75,14 @@ function getPhaseDetails(phase: string | null | undefined) {
         icon: "🌙",
         tagline: "Nesting, Metabolic Shift & Calm Focus",
         description:
-          "Progesterone is the dominant hormone. Basal metabolic rate increases slightly; body prepares for rest.",
+          "Progesterone takes over, slightly increasing metabolic rate while shifting body focus toward wind-down, detail-oriented work, and rest.",
         tips: [
-          "Increase complex carbs (sweet potatoes, oats) to stabilize serotonin and mood.",
-          "Incorporate magnesium and B-complex vitamins to alleviate PMS sensations.",
-          "Transition to moderate exercise like pilates, walking, and strength sessions.",
+          "Incorporate slow-burning carbs (sweet potatoes, oats, quinoa) to stabilize blood sugar and mood.",
+          "Take magnesium and B-vitamins to minimize bloating, fluid retention, and PMS irritability.",
+          "Shift from high-impact cardio to steady-state exercise like Pilates, resistance training, or brisk walks.",
         ],
       };
+
     default:
       return {
         name: "Cycle In Sync",
@@ -88,11 +92,11 @@ function getPhaseDetails(phase: string | null | undefined) {
         icon: "🌸",
         tagline: "Personalized Cycle Intelligence",
         description:
-          "Log your cycles regularly to unlock predictive phase forecasting, symptom correlations, and wellness plans.",
+          "Track your cycle consistently to unlock tailored hormonal insights, accurate phase predictions, and personalized wellness advice.",
         tips: [
-          "Log today's symptoms and mood to improve machine predictions.",
-          "Maintain balanced hydration throughout your daily routine.",
-          "Check in with Herizon AI for personalized wellness queries.",
+          "Log daily symptoms, mood, and energy levels to make your predictive insights more accurate.",
+          "Stay consistently hydrated and maintain a regular sleep schedule throughout your cycle.",
+          "Ask Herizon AI any questions about symptoms, nutrition, or workout modifications.",
         ],
       };
   }
@@ -198,7 +202,7 @@ export default async function DashboardPage() {
     prisma.symptomCheck.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
-      take: 3,
+      take: 2,
       include: {
         symptoms: {
           include: {
