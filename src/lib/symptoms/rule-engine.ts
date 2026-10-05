@@ -113,17 +113,21 @@ export async function evaluateSymptomRules(
     : "";
 
   const title = selectedSymptoms.length === 1
-    ? `${phasePrefix}Symptom Care: ${selectedSymptoms[0].name}`
-    : `${phasePrefix}Personalized Care Plan for ${selectedSymptoms.length} Symptoms`;
+    ? `${phasePrefix}Clinical Care Guidance: ${selectedSymptoms[0].name}`
+    : `${phasePrefix}Personalized Care Guidance for ${selectedSymptoms.length} Symptoms`;
 
   const symptomAdviceList = selectedSymptoms.map((s) => {
-    const desc = s.description ? `: ${s.description}` : "";
-    return `• ${s.name}${desc}`;
+    const guidance = s.recommendation?.trim()
+      ? s.recommendation.trim()
+      : "Rest well, maintain hydration, and observe symptom changes.";
+    return `• ${s.name}: ${guidance}`;
   }).join("\n");
 
   const recommendation = selectedSymptoms.length === 1
-    ? `Guidance for ${selectedSymptoms[0].name}${selectedSymptoms[0].description ? `: ${selectedSymptoms[0].description}` : ". Rest well, stay hydrated, and track how you feel."}`
-    : `Tailored insights for your logged symptoms:\n${symptomAdviceList}\n\nEnsure adequate rest, balanced nutrition, and hydration. If symptoms worsen or persist, please consult a healthcare professional.`;
+    ? (selectedSymptoms[0].recommendation?.trim()
+        ? `Care & Treatment Guidance:\n${selectedSymptoms[0].recommendation.trim()}\n\nNote: If symptoms persist, intensify, or interfere with daily activities, please consult your physician.`
+        : `Guidance for ${selectedSymptoms[0].name}: Rest well, stay hydrated, monitor symptom intensity, and consult a healthcare professional if symptoms persist.`)
+    : `Tailored Care & Actionable Guidance for your logged symptoms:\n${symptomAdviceList}\n\nEnsure adequate rest, gentle hydration, and balanced nutrition. If severe discomfort develops or symptoms persist, please consult a healthcare professional.`;
 
   return {
     ruleId: null,

@@ -236,18 +236,19 @@ model CycleSymptom {
 ///////////////////////
 
 model Symptom {
-  id          String            @id @default(cuid())
-  name        String            @unique
-  description String?
-  severity    SymptomSeverity   @default(LOW)
-  isActive    Boolean           @default(true)
+  id             String            @id @default(cuid())
+  name           String            @unique
+  description    String?
+  recommendation String?
+  severity       SymptomSeverity   @default(LOW)
+  isActive       Boolean           @default(true)
 
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
-  cycleSymptoms     CycleSymptom[]
-  checkItems        SymptomCheckItem[]
-  ruleConditions    SymptomRuleCondition[]
+  cycleSymptoms  CycleSymptom[]
+  checkItems     SymptomCheckItem[]
+  ruleConditions SymptomRuleCondition[]
 }
 
 model SymptomRule {

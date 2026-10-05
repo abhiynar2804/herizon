@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { name, description, severity, isActive } = result.data;
+    const { name, description, recommendation, severity, isActive } = result.data;
 
     const existingSymptom = await prisma.symptom.findUnique({
       where: { name },
@@ -89,6 +89,7 @@ export async function POST(request: Request) {
       data: {
         name,
         description,
+        recommendation,
         severity,
         isActive: isActive ?? true,
       },

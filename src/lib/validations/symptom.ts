@@ -13,6 +13,12 @@ export const symptomSchema = z.object({
     .max(1000, "Description is too long")
     .optional(),
 
+  recommendation: z
+    .string()
+    .trim()
+    .max(2000, "Recommendation is too long")
+    .optional(),
+
   severity: z.enum(["LOW", "MODERATE", "HIGH", "CRITICAL"]),
 
   isActive: z.boolean().optional(),

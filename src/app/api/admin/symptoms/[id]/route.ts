@@ -105,7 +105,7 @@ export async function PATCH(
       );
     }
 
-    const { name, description, severity, isActive } = result.data;
+    const { name, description, recommendation, severity, isActive } = result.data;
 
     const duplicate = await prisma.symptom.findFirst({
       where: {
@@ -126,6 +126,7 @@ export async function PATCH(
       data: {
         name,
         description,
+        recommendation,
         severity,
         ...(isActive !== undefined && { isActive }),
       },

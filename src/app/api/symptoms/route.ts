@@ -23,6 +23,7 @@ export async function GET() {
         id: true,
         name: true,
         description: true,
+        recommendation: true,
         severity: true,
       },
       orderBy: {

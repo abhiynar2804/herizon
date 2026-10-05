@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
@@ -37,16 +37,6 @@ export default function AIPage() {
   // Rename session states
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, loading]);
 
   const loadSession = useCallback(async (sessionId: string) => {
     try {
@@ -405,7 +395,6 @@ export default function AIPage() {
                     </div>
                   )}
 
-                  <div ref={messagesEndRef} />
                 </>
               )}
             </div>

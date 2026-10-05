@@ -8,6 +8,7 @@ type Symptom = {
   id: string;
   name: string;
   description: string | null;
+  recommendation?: string | null;
   severity: string;
 };
 

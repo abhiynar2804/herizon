@@ -10,6 +10,7 @@ type Symptom = {
   id: string;
   name: string;
   description: string | null;
+  recommendation: string | null;
   severity: SymptomSeverityLevel;
   isActive: boolean;
 };
@@ -38,6 +39,7 @@ export default function AdminSymptomsPage() {
   // Symptom Create Form State
   const [symptomName, setSymptomName] = useState("");
   const [symptomDesc, setSymptomDesc] = useState("");
+  const [symptomRec, setSymptomRec] = useState("");
   const [symptomSeverity, setSymptomSeverity] =
     useState<SymptomSeverityLevel>("LOW");
   const [addingSymptom, setAddingSymptom] = useState(false);
@@ -46,6 +48,7 @@ export default function AdminSymptomsPage() {
   const [editingSymptom, setEditingSymptom] = useState<Symptom | null>(null);
   const [editSymName, setEditSymName] = useState("");
   const [editSymDesc, setEditSymDesc] = useState("");
+  const [editSymRec, setEditSymRec] = useState("");
   const [editSymSeverity, setEditSymSeverity] =
     useState<SymptomSeverityLevel>("LOW");
   const [savingSymptom, setSavingSymptom] = useState(false);
@@ -118,6 +121,7 @@ export default function AdminSymptomsPage() {
         body: JSON.stringify({
           name: symptomName.trim(),
           description: symptomDesc.trim() || undefined,
+          recommendation: symptomRec.trim() || undefined,
           severity: symptomSeverity,
         }),
       });
@@ -129,6 +133,7 @@ export default function AdminSymptomsPage() {
       setSuccess("Symptom added successfully!");
       setSymptomName("");
       setSymptomDesc("");
+      setSymptomRec("");
       await loadAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error adding symptom.");
@@ -141,6 +146,7 @@ export default function AdminSymptomsPage() {
     setEditingSymptom(s);
     setEditSymName(s.name);
     setEditSymDesc(s.description || "");
+    setEditSymRec(s.recommendation || "");
     setEditSymSeverity(s.severity);
     setError("");
   }
@@ -160,6 +166,7 @@ export default function AdminSymptomsPage() {
         body: JSON.stringify({
           name: editSymName.trim(),
           description: editSymDesc.trim() || undefined,
+          recommendation: editSymRec.trim() || undefined,
           severity: editSymSeverity,
         }),
       });
@@ -424,13 +431,26 @@ export default function AdminSymptomsPage() {
 
                 <div>
                   <label className="block text-slate-300 font-semibold mb-1">
-                    Description
+                    Description (What is this symptom?)
                   </label>
                   <textarea
                     rows={2}
                     value={symptomDesc}
                     onChange={(e) => setSymptomDesc(e.target.value)}
-                    placeholder="Brief description of clinical indicator..."
+                    placeholder="Describe what the symptom is or how it presents..."
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-pink-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Clinical Recommendation / Guidance (Actionable advice)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={symptomRec}
+                    onChange={(e) => setSymptomRec(e.target.value)}
+                    placeholder="Specific care steps, relief remedies, or medical guidance for this symptom..."
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-pink-500"
                   />
                 </div>
@@ -451,36 +471,60 @@ export default function AdminSymptomsPage() {
                 Active Symptoms Directory ({symptoms.length})
               </h2>
 
-              <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
                 {symptoms.map((s) => (
                   <div
                     key={s.id}
-                    className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs"
+                    className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs"
                   >
-                    <div>
-                      <div className="font-bold text-white">{s.name}</div>
-                      <span className="text-[10px] text-pink-400 font-medium">
-                        {s.severity} Severity
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-white text-sm">{s.name}</span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                            s.severity === "CRITICAL"
+                              ? "bg-red-950 text-red-300 border border-red-800"
+                              : s.severity === "HIGH"
+                              ? "bg-amber-950 text-amber-300 border border-amber-800"
+                              : s.severity === "MODERATE"
+                              ? "bg-purple-950 text-purple-300 border border-purple-800"
+                              : "bg-slate-800 text-slate-300"
+                          }`}
+                        >
+                          {s.severity}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditSymptom(s)}
+                          className="px-2.5 py-1 rounded-lg bg-pink-950/60 hover:bg-pink-900/80 text-pink-300 border border-pink-800/60 text-xs transition"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSymptom(s.id)}
+                          disabled={deletingSymptomId === s.id}
+                          className="px-2.5 py-1 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/60 text-xs transition disabled:opacity-50"
+                        >
+                          {deletingSymptomId === s.id ? "..." : "Deactivate"}
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleStartEditSymptom(s)}
-                        className="px-2.5 py-1 rounded-lg bg-pink-950/60 hover:bg-pink-900/80 text-pink-300 border border-pink-800/60 text-xs transition"
-                      >
-                        ✏️ Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteSymptom(s.id)}
-                        disabled={deletingSymptomId === s.id}
-                        className="px-2.5 py-1 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/60 text-xs transition disabled:opacity-50"
-                      >
-                        {deletingSymptomId === s.id ? "..." : "Deactivate"}
-                      </button>
-                    </div>
+                    {s.description && (
+                      <p className="text-slate-400 text-[11px] leading-relaxed">
+                        <strong className="text-slate-300">ℹ️ Description:</strong> {s.description}
+                      </p>
+                    )}
+
+                    {s.recommendation && (
+                      <p className="text-pink-300/90 text-[11px] leading-relaxed bg-pink-950/30 p-2 rounded-xl border border-pink-900/40">
+                        <strong className="text-pink-200">💡 Care Guidance:</strong> {s.recommendation}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -706,12 +750,26 @@ export default function AdminSymptomsPage() {
 
                 <div>
                   <label className="block text-slate-300 font-semibold mb-1">
-                    Description
+                    Description (What is this symptom?)
                   </label>
                   <textarea
                     rows={2}
                     value={editSymDesc}
                     onChange={(e) => setEditSymDesc(e.target.value)}
+                    placeholder="Describe what the symptom is..."
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-pink-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    Clinical Recommendation / Guidance (Actionable advice)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editSymRec}
+                    onChange={(e) => setEditSymRec(e.target.value)}
+                    placeholder="Specific care steps or remedies for this symptom..."
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-pink-500"
                   />
                 </div>
